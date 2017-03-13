@@ -1,0 +1,9 @@
+# part 1: variables
+
+ CONSOLE_HOST     = 127.0.0.1
+ CONSOLE_PORT     = 1235
+
+# part 3: targets
+
+launch-console :
+	@nc ${CONSOLE_HOST} ${CONSOLE_PORT}
