@@ -21,11 +21,44 @@ size_t findProcessByPID(pid_t pid) {
 		pcb_t *process = &processes[i];
 		if (process->pid == 0) {
 			break;
-		} else if (process->pid = pid) {
+		} else if (process->pid == pid) {
 			return i;
 		}
 	}
 	return SIZE_MAX;
+}
+
+void removeProcess(pid_t pid) {
+	int ptr = 0;
+	for (; ptr < MAX_PROCESSES; ptr++) {
+		pcb_t *process = &processes[ptr];
+		if (process->pid == 0) {
+			printLine("Can't remove process if it doesn't exist!");
+			return;
+		} else if (process->pid == pid) {
+			break;
+		}
+	}
+
+	printf("Found pid at ");
+	printNum(ptr);
+	printf("\n");
+
+	while (ptr + 1 < MAX_PROCESSES && processes[ptr + 1].pid != 0) {
+		printf("Switching ");
+		printNum(ptr);
+		printf(" and ");
+		printNum(ptr + 1);
+		printf("\n");
+
+		memcpy(&processes[ptr], &processes[ptr + 1], sizeof(pcb_t));
+		ptr++;
+	}
+
+	printf("Setting to 0: ");
+	printNum(ptr);
+	printf("\n");
+	processes[ptr].pid = 0;
 }
 
 size_t getNumProcesses() {
@@ -42,7 +75,7 @@ typedef struct {
 
 
 extern u32 tos_UserSpace;
-#define PAGE_SIZE 0x400
+#define PAGE_SIZE 0x800
 #define MAX_PAGES 0x0010000 / PAGE_SIZE
 Page pages[MAX_PAGES];
 
@@ -78,13 +111,16 @@ inline pid_t startProcess(u8 priority, u32 cpsr, u32 pc) {
 	printNum(id);
 	printf("\n");
 
+	u32 sp = allocateStack(pid);
+
 	memset(&processes[id], 0, sizeof(pcb_t));
 	processes[id].pid      = pid;
 	processes[id].priority = priority;
+	processes[id].stack_start = sp;
 	processes[id].time_since_last_ran = 0;
 	processes[id].ctx.cpsr = cpsr;
 	processes[id].ctx.pc   = pc;
-	processes[id].ctx.sp   = allocateStack(pid);
+	processes[id].ctx.sp   = sp;
 
 	return pid;
 }
@@ -107,6 +143,7 @@ inline pid_t startProcessByCtx(u8 priority, ctx_t *ctx) {
 	memset(&processes[id], 0, sizeof(pcb_t));
 	processes[id].pid      = pid;
 	processes[id].priority = priority;
+	processes[id].stack_start = 0;
 	processes[id].time_since_last_ran = 0;
 	memcpy(&processes[id].ctx, ctx, sizeof(ctx_t));
 
@@ -115,7 +152,13 @@ inline pid_t startProcessByCtx(u8 priority, ctx_t *ctx) {
 
 void switchTo(ctx_t* ctx, int id)
 {
-	memcpy(&current->ctx, ctx, sizeof(ctx_t));
+	printf("=========== ");
+	printNum(processes[id].pid);
+	printf(" ===========\n");
+
+	if (current) {
+		memcpy(&current->ctx, ctx, sizeof(ctx_t));
+	}
 	memcpy(ctx, &processes[id].ctx, sizeof(ctx_t));
 	current = &processes[id];
 	processes[id].time_since_last_ran = 0;
@@ -128,7 +171,7 @@ void switchTo(ctx_t* ctx, int id)
 void scheduler(ctx_t* ctx)
 {
 	int best_id = -1;
-	int best_priority = 0;
+	int best_priority = -1;
 	for (int i = 0; i < getNumProcesses(); i++) {
 		pcb_t *prog = &processes[i];
 		int priority = prog->priority + prog->time_since_last_ran++;
@@ -139,7 +182,10 @@ void scheduler(ctx_t* ctx)
 	}
 
 	if (best_id >= 0) {
+		printLine("switching!");
 		switchTo(ctx, best_id);
+	} else {
+		printLine("No processes found to switch to!");
 	}
 }
 
@@ -158,14 +204,13 @@ void hilevel_handler_rst(ctx_t *ctx) {
 	printLine("RESET");
 
 	initProcessTable();
-	startProcess(PRIORITY_HIGHEST, 0x50, (u32)&main_P3);
-	startProcess(PRIORITY_NORMAL,  0x50, (u32)&main_P4);
-	startProcess(PRIORITY_NORMAL,  0x50, (u32)&main_P5);
+	startProcess(PRIORITY_NORMAL, 0x50, (u32)&main_P3);
+	startProcess(PRIORITY_NORMAL, 0x50, (u32)&main_P4);
+	startProcess(PRIORITY_NORMAL, 0x50, (u32)&main_P5);
 
 	printLine(" - Setting current & ctx");
 
-	current = &processes[0];
-	memcpy(ctx, &current->ctx, sizeof(ctx_t));
+	switchTo(ctx, 0);
 
 	printLine(" - Initialising timer and GIC");
 
@@ -266,10 +311,27 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			break;
 		}
 		case SYS_FORK:
-			printLine(" - fork unimplemented");
+			printLine(" - fork");
+
+			size_t new_id = findProcessByPID(startProcessByCtx(current->priority, ctx));
+			if (new_id >= 0) {
+				pcb_t *new = &processes[new_id];
+				ctx->gpr[0] = 0;
+
+				u32 offset = current->stack_start - ctx->sp;
+				new->stack_start = allocateStack(new->pid);
+				new->ctx.sp = new->stack_start - offset;
+				memcpy((u32*)new->ctx.sp, (u32*)ctx->sp, offset);
+				new->ctx.gpr[0] = 1;
+			} else {
+				ctx->gpr[0] = -1;
+			}
+
 			break;
 		case SYS_EXIT:
-			printLine(" - exit unimplemented");
+			printLine(" - exit");
+			removeProcess(current->pid);
+			current = 0;
 			scheduler(ctx);
 			break;
 		case SYS_EXEC:

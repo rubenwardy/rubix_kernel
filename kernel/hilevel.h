@@ -60,6 +60,7 @@ typedef struct {
   ctx_t ctx;
   u8 priority;
   u32 time_since_last_ran;
+  u32 stack_start;
 } pcb_t;
 
 #endif

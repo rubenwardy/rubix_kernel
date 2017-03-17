@@ -15,6 +15,16 @@ int is_prime( uint32_t x ) {
 }
 
 void main_P3() {
+    // int res = fork();
+    // if (res == 1) {
+    //     write( STDOUT_FILENO, "child", 5);
+    // } else if (res == 0) {
+    //     write( STDOUT_FILENO, "parent", 6);
+    // } else {
+    //     write( STDOUT_FILENO, "error", 5);
+    // }
+
+
   for( int i = 0; i < 50; i++ ) {
     write( STDOUT_FILENO, "P3", 2 );
 
