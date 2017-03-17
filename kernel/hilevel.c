@@ -338,13 +338,13 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			size_t new_id = findProcessByPID(startProcessByCtx(current->priority, ctx));
 			if (new_id >= 0) {
 				pcb_t *new = &processes[new_id];
-				ctx->gpr[0] = 0;
+				ctx->gpr[0] = new->pid;
 
 				u32 offset = current->stack_start - ctx->sp;
 				new->stack_start = allocateStack(new->pid);
 				new->ctx.sp = new->stack_start - offset;
 				memcpy((u32*)new->ctx.sp, (u32*)ctx->sp, offset);
-				new->ctx.gpr[0] = 1;
+				new->ctx.gpr[0] = 0;
 			} else {
 				ctx->gpr[0] = -1;
 			}

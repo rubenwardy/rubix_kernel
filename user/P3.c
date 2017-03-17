@@ -18,12 +18,12 @@ extern void main_P4();
 
 void main_P3() {
     // int res = fork();
-    // if (res == 1) {
-    //     write( STDOUT_FILENO, "child", 5);
-    // } else if (res == 0) {
-    //     write( STDOUT_FILENO, "parent", 6);
-    // } else {
+    // if (res == -1) {
     //     write( STDOUT_FILENO, "error", 5);
+    // } else if (res == 0) {
+    //     write( STDOUT_FILENO, "child", 5);
+    // } else {
+    //     write( STDOUT_FILENO, "parent", 6);
     // }
     write( STDOUT_FILENO, "P3", 2 );
 
