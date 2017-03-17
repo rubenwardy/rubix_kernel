@@ -55,9 +55,33 @@ inline pid_t startProcess(u8 priority, u32 cpsr, u32 pc, u32 sp) {
 	processes[id].pid      = pid;
 	processes[id].priority = priority;
 	processes[id].time_since_last_ran = 0;
-	processes[id].ctx.cpsr = 0x50;
+	processes[id].ctx.cpsr = cpsr;
 	processes[id].ctx.pc   = pc;
 	processes[id].ctx.sp   = sp;
+
+	return pid;
+}
+
+inline pid_t startProcessByCtx(u8 priority, ctx_t *ctx) {
+	size_t id = getNumProcesses();
+	pid_t pid = ++pid_count;
+
+	if (id == MAX_PROCESSES) {
+		printLine("Unable to start process as maximum processes limit was reached");
+		return 0;
+	}
+
+	printf("Starting process pid=");
+	printNum(pid);
+	printf(" at pcb=");
+	printNum(id);
+	printf("\n");
+
+	memset(&processes[id], 0, sizeof(pcb_t));
+	processes[id].pid      = pid;
+	processes[id].priority = priority;
+	processes[id].time_since_last_ran = 0;
+	memcpy(&processes[id].ctx, ctx, sizeof(ctx_t));
 
 	return pid;
 }
@@ -222,6 +246,7 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			break;
 		case SYS_EXIT:
 			printLine(" - exit unimplemented");
+			scheduler(ctx);
 			break;
 		case SYS_EXEC:
 			printLine(" - exec unimplemented");

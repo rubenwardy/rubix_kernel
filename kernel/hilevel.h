@@ -37,8 +37,20 @@ typedef uint8_t  u8;
 typedef int pid_t;
 
 typedef struct {
-  uint32_t cpsr, pc, gpr[ 13 ], sp, lr;
+  uint32_t cpsr;    // Current program status register
+  uint32_t pc;      // Program counter
+  uint32_t gpr[13]; // Registers?
+  uint32_t sp;      // Stack pointer
+  uint32_t lr;      // Link register
 } ctx_t;
+
+// CPSR contains:
+//  - the APSR flags
+//  - the current processor mode
+//  - interrupt disable flags
+//  - current processor state (ARM, Thumb, ThumbEE, or Jazelle®)
+//  - endianness state (on ARMv4T and later)
+//  - execution state bits for the IT block (on ARMv6T2 and later).
 
 #define PRIORITY_HIGHEST 3
 #define PRIORITY_NORMAL  1
