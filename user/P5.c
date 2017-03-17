@@ -18,7 +18,7 @@ void main_P5() {
     uint32_t hi = 1 << 24;
 
     for( uint32_t x = lo; x < hi; x++ ) {
-      uint32_t r = weight( x ); 
+      uint32_t r = weight( x );
     }
   }
 

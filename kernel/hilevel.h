@@ -20,6 +20,10 @@
 #include "lolevel.h"
 #include     "int.h"
 
+typedef uint32_t u32;
+typedef uint16_t u16;
+typedef uint8_t  u8;
+
 /* The kernel source code is made simpler via three type definitions:
  *
  * - a type that captures a Process IDentifier (PID), which is really
@@ -39,6 +43,8 @@ typedef struct {
 typedef struct {
   pid_t pid;
   ctx_t ctx;
+  u8 priority;
+  u32 time_since_last_ran;
 } pcb_t;
 
 #endif

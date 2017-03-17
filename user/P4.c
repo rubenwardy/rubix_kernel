@@ -21,7 +21,7 @@ void main_P4() {
 
     for( uint32_t x = lo; x < hi; x++ ) {
       for( uint32_t y = lo; y < hi; y++ ) {
-        uint32_t r = gcd( x, y ); 
+        uint32_t r = gcd( x, y );
       }
     }
   }
