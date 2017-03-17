@@ -4,56 +4,24 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
 #include <string.h>
+#include "hilevel.h"
 
-struct MaxHeapNode {
-	struct MaxHeapNode *left;
-	struct MaxHeapNode *right;
-	void *data;
+struct MaxHeapItem {
+	pid_t data;
 	int weight;
 };
-typedef struct MaxHeapNode MaxHeapNode;
+typedef struct MaxHeapItem MaxHeapItem;
 
-typedef MaxHeapNode * MaxHeap;
+struct MaxHeap {
+	MaxHeapItem items[MAX_PROCESSES];
+	int num_items;
+};
+typedef struct MaxHeap MaxHeap;
 
-void heap_set(MaxHeap heap, int weight, void *data) {
-	
-}
+extern void heaps_init(MaxHeap *x);
+extern void heaps_insert(MaxHeap *x, int weight, pid_t data);
+extern pid_t heaps_extractMax(MaxHeap *x);
 
-void maxHeapify(MaxHeapNode *x) {
-	MaxHeapNode *left  = x->left;
-	MaxHeapNode *right = x->right;
-
-	int x_w = x->weight;
-	int left_w = (left) ? left->weight : -1;
-	int right_w = (right) ? right->weight : -1;
-
-	if (left_w > x_w && left_w > right_w) {
-		// right > left and root
-		void *x_data = x->data;
-		x->data = left->data;
-		x->weight = left->weight;
-		left->data = x_data;
-		left->weight = x_w;
-		maxHeapify(x->left);
-	} else if (right_w > x_w) {
-		// right > left and root
-		void *x_data = x->data;
-		int x_w = x->weight;
-		x->data = right->data;
-		x->weight = right->weight;
-		right->data = x_data;
-		right->weight = x_w;
-		maxHeapify(x->right);
-	} else {
-		// root is biggest
-	}
-}
-
-
-MaxHeapNode *insertIntoTree(MaxHeapNode *tree, MaxHeapNode *node) {
-
-}
 
 #endif
