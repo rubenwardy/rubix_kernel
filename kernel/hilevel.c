@@ -7,15 +7,15 @@ size_t getNumProcesses() {
 	return 3;
 }
 
-pcb_t pcb[3];
+pcb_t processes[3];
 pcb_t *current = NULL;
 
 void switchTo(ctx_t* ctx, int id)
 {
 	memcpy(&current->ctx, ctx, sizeof(ctx_t));
-	memcpy(ctx, &pcb[id].ctx, sizeof(ctx_t));
-	current = &pcb[id];
-	pcb[id].time_since_last_ran = 0;
+	memcpy(ctx, &processes[id].ctx, sizeof(ctx_t));
+	current = &processes[id];
+	processes[id].time_since_last_ran = 0;
 }
 
 void scheduler(ctx_t* ctx)
@@ -23,7 +23,7 @@ void scheduler(ctx_t* ctx)
 	int best_id = -1;
 	int best_priority = 0;
 	for (int i = 0; i < getNumProcesses(); i++) {
-		pcb_t *prog = &pcb[i];
+		pcb_t *prog = &processes[i];
 		int priority = prog->priority + prog->time_since_last_ran++;
 		if (priority > best_priority) {
 			best_id = i;
@@ -45,13 +45,13 @@ extern u32  tos_P5;
 
 inline void addProgram(size_t id, pid_t pid, u8 priority, u32 cpsr,
 		u32 pc, u32 sp) {
-	memset(&pcb[id], 0, sizeof(pcb_t));
-	pcb[id].pid      = pid;
-	pcb[id].priority = priority;
-	pcb[id].time_since_last_ran = 0;
-	pcb[id].ctx.cpsr = 0x50;
-	pcb[id].ctx.pc   = pc;
-	pcb[id].ctx.sp   = sp;
+	memset(&processes[id], 0, sizeof(pcb_t));
+	processes[id].pid      = pid;
+	processes[id].priority = priority;
+	processes[id].time_since_last_ran = 0;
+	processes[id].ctx.cpsr = 0x50;
+	processes[id].ctx.pc   = pc;
+	processes[id].ctx.sp   = sp;
 }
 
 
@@ -67,7 +67,7 @@ void hilevel_handler_rst(ctx_t *ctx) {
 
 	printLine(" - Setting current & ctx");
 
-	current = &pcb[0];
+	current = &processes[0];
 	memcpy(ctx, &current->ctx, sizeof(ctx_t));
 
 	printLine(" - Initialising timer and GIC");
