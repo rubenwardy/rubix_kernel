@@ -14,6 +14,8 @@ int is_prime( uint32_t x ) {
   return 1;
 }
 
+extern void main_P4();
+
 void main_P3() {
     // int res = fork();
     // if (res == 1) {
@@ -23,18 +25,20 @@ void main_P3() {
     // } else {
     //     write( STDOUT_FILENO, "error", 5);
     // }
-
-
-  for( int i = 0; i < 50; i++ ) {
     write( STDOUT_FILENO, "P3", 2 );
 
-    uint32_t lo = 1 <<  8;
-    uint32_t hi = 1 << 16;
+    exec((void*)&main_P4);
 
-    for( uint32_t x = lo; x < hi; x++ ) {
-      int r = is_prime( x );
-    }
-  }
+  // for( int i = 0; i < 50; i++ ) {
+  //   write( STDOUT_FILENO, "P3", 2 );
+  //
+  //   uint32_t lo = 1 <<  8;
+  //   uint32_t hi = 1 << 16;
+  //
+  //   for( uint32_t x = lo; x < hi; x++ ) {
+  //     int r = is_prime( x );
+  //   }
+  // }
 
   exit( EXIT_SUCCESS );
 }

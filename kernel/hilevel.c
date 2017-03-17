@@ -96,7 +96,15 @@ u32 allocateStack(pid_t pid) {
 	return (u32)&tos_UserSpace - ptr * PAGE_SIZE;
 }
 
+void deallocateStack(uint32_t stack_start) {
+	// TODO: house cleaning
+}
+
 inline pid_t startProcess(u8 priority, u32 cpsr, u32 pc) {
+	if (pc == 0) {
+		printLine("Unable to start process with null instructions");
+	}
+
 	size_t id = getNumProcesses();
 	pid_t pid = ++pid_count;
 
@@ -196,6 +204,18 @@ extern void main_P3();
 extern void main_P4();
 extern void main_P5();
 
+u32 getProgramInstAddress(const char *name) {
+	if (strcmp(name, "p3") == 0) {
+		return (u32)&main_P3;
+	} else if (strcmp(name, "p4") == 0) {
+		return (u32)&main_P4;
+	} else if (strcmp(name, "p5") == 0) {
+		return (u32)&main_P5;
+	} else {
+		return 0;
+	}
+}
+
 
 //
 // Initialise states
@@ -204,9 +224,9 @@ void hilevel_handler_rst(ctx_t *ctx) {
 	printLine("RESET");
 
 	initProcessTable();
-	startProcess(PRIORITY_NORMAL, 0x50, (u32)&main_P3);
-	startProcess(PRIORITY_NORMAL, 0x50, (u32)&main_P4);
-	startProcess(PRIORITY_NORMAL, 0x50, (u32)&main_P5);
+	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p3"));
+	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p4"));
+	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p5"));
 
 	printLine(" - Setting current & ctx");
 
@@ -335,7 +355,19 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			scheduler(ctx);
 			break;
 		case SYS_EXEC:
-			printLine(" - exec unimplemented");
+			printLine(" - exec");
+
+			void *addr = (void*)(ctx->gpr[0]);
+			deallocateStack(current->stack_start);
+			current->stack_start = allocateStack(current->pid);
+			ctx->cpsr = 0x50;
+			ctx->pc = (u32)addr;
+			for (int i = 0; i < 13; i++) {
+				ctx->gpr[i] = 0;
+			}
+			ctx->sp = current->stack_start;
+			ctx->lr = 0;
+
 			break;
 		case SYS_KILL:
 			printLine(" - kill unimplemented");
