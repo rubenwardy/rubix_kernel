@@ -36,7 +36,34 @@ size_t getNumProcesses() {
 	return ptr;
 }
 
-inline pid_t startProcess(u8 priority, u32 cpsr, u32 pc, u32 sp) {
+typedef struct {
+	pid_t pid;
+} Page;
+
+
+extern u32 tos_UserSpace;
+#define PAGE_SIZE 0x400
+#define MAX_PAGES 0x0010000 / PAGE_SIZE
+Page pages[MAX_PAGES];
+
+u32 allocateStack(pid_t pid) {
+	size_t ptr = 0;
+	while (pages[ptr].pid != 0) {
+		ptr++;
+	}
+
+	pages[ptr].pid = pid;
+
+	printf("Allocated page ");
+	printNum(ptr);
+	printf(" to pid=");
+	printNum(pid);
+	printf("\n");
+
+	return (u32)&tos_UserSpace - ptr * PAGE_SIZE;
+}
+
+inline pid_t startProcess(u8 priority, u32 cpsr, u32 pc) {
 	size_t id = getNumProcesses();
 	pid_t pid = ++pid_count;
 
@@ -57,7 +84,7 @@ inline pid_t startProcess(u8 priority, u32 cpsr, u32 pc, u32 sp) {
 	processes[id].time_since_last_ran = 0;
 	processes[id].ctx.cpsr = cpsr;
 	processes[id].ctx.pc   = pc;
-	processes[id].ctx.sp   = sp;
+	processes[id].ctx.sp   = allocateStack(pid);
 
 	return pid;
 }
@@ -120,11 +147,8 @@ void scheduler(ctx_t* ctx)
 
 // We're using staticly linked programs
 extern void main_P3();
-extern u32  tos_P3;
 extern void main_P4();
-extern u32  tos_P4;
 extern void main_P5();
-extern u32  tos_P5;
 
 
 //
@@ -134,9 +158,9 @@ void hilevel_handler_rst(ctx_t *ctx) {
 	printLine("RESET");
 
 	initProcessTable();
-	startProcess(PRIORITY_HIGHEST, 0x50, (u32)&main_P3, (u32)&tos_P3);
-	startProcess(PRIORITY_NORMAL, 0x50, (u32)&main_P4, (u32)&tos_P4);
-	startProcess(PRIORITY_NORMAL, 0x50, (u32)&main_P5, (u32)&tos_P5);
+	startProcess(PRIORITY_HIGHEST, 0x50, (u32)&main_P3);
+	startProcess(PRIORITY_NORMAL,  0x50, (u32)&main_P4);
+	startProcess(PRIORITY_NORMAL,  0x50, (u32)&main_P5);
 
 	printLine(" - Setting current & ctx");
 

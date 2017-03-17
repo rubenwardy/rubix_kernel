@@ -15,16 +15,25 @@ void printLine(const char *cs) {
 	printf("\n\0");
 }
 
+void printNum2(int num) {
+	int digit = num % 10;
+	int next = num / 10;
+	if (next > 0) {
+		printNum2(next);
+	}
+	PL011_putc(UART0, digit + '0', true);
+}
+
 void printNum(int num) {
+	if (num < 0) {
+		PL011_putc(UART0, '-', true);
+		num *= -1;
+	}
+
 	if (num == 0) {
 		PL011_putc(UART0, '0', true);
 	} else {
-		int next = num / 10;
-		if (next != 0) {
-			printNum(next);
-		}
-		int digit = num % 10;
-		PL011_putc(UART0, digit + '0', true);
+		printNum2(num);
 	}
 }
 
