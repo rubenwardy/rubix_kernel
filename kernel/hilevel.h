@@ -40,6 +40,9 @@ typedef struct {
   uint32_t cpsr, pc, gpr[ 13 ], sp, lr;
 } ctx_t;
 
+#define PRIORITY_HIGHEST 3
+#define PRIORITY_NORMAL  1
+
 typedef struct {
   pid_t pid;
   ctx_t ctx;

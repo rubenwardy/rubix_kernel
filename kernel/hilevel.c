@@ -1,14 +1,66 @@
 #include "hilevel.h"
 #include "utils.h"
 
-// #include "heaps.h"
+//
+// PROCESS MANAGEMENT
+//
 
-size_t getNumProcesses() {
-	return 3;
+#define MAX_PROCESSES 10
+// ^ Linux is 31,000 per user
+
+pcb_t processes[MAX_PROCESSES];
+pcb_t *current = NULL;
+pid_t pid_count = 0;
+
+void initProcessTable() {
+	memset(&processes[0], 0, sizeof(pcb_t) * MAX_PROCESSES);
 }
 
-pcb_t processes[3];
-pcb_t *current = NULL;
+size_t findProcessByPID(pid_t pid) {
+	for (int i = 0; i < MAX_PROCESSES; i++) {
+		pcb_t *process = &processes[i];
+		if (process->pid == 0) {
+			break;
+		} else if (process->pid = pid) {
+			return i;
+		}
+	}
+	return SIZE_MAX;
+}
+
+size_t getNumProcesses() {
+	int ptr = 0;
+	while (ptr < MAX_PROCESSES && processes[ptr].pid != 0) {
+		ptr++;
+	}
+	return ptr;
+}
+
+inline pid_t startProcess(u8 priority, u32 cpsr, u32 pc, u32 sp) {
+	size_t id = getNumProcesses();
+	pid_t pid = ++pid_count;
+
+	if (id == MAX_PROCESSES) {
+		printLine("Unable to start process as maximum processes limit was reached");
+		return 0;
+	}
+
+	printf("Starting process pid=");
+	printNum(pid);
+	printf(" at pcb=");
+	printNum(id);
+	printf("\n");
+
+	memset(&processes[id], 0, sizeof(pcb_t));
+	processes[id].pid      = pid;
+	processes[id].priority = priority;
+	processes[id].time_since_last_ran = 0;
+	processes[id].ctx.cpsr = 0x50;
+	processes[id].ctx.pc   = pc;
+	processes[id].ctx.sp   = sp;
+
+	return pid;
+}
 
 void switchTo(ctx_t* ctx, int id)
 {
@@ -18,6 +70,10 @@ void switchTo(ctx_t* ctx, int id)
 	processes[id].time_since_last_ran = 0;
 }
 
+
+//
+// PROCESS SCHEDULER
+//
 void scheduler(ctx_t* ctx)
 {
 	int best_id = -1;
@@ -36,23 +92,15 @@ void scheduler(ctx_t* ctx)
 	}
 }
 
+
+
+// We're using staticly linked programs
 extern void main_P3();
 extern u32  tos_P3;
 extern void main_P4();
 extern u32  tos_P4;
 extern void main_P5();
 extern u32  tos_P5;
-
-inline void addProgram(size_t id, pid_t pid, u8 priority, u32 cpsr,
-		u32 pc, u32 sp) {
-	memset(&processes[id], 0, sizeof(pcb_t));
-	processes[id].pid      = pid;
-	processes[id].priority = priority;
-	processes[id].time_since_last_ran = 0;
-	processes[id].ctx.cpsr = 0x50;
-	processes[id].ctx.pc   = pc;
-	processes[id].ctx.sp   = sp;
-}
 
 
 //
@@ -61,9 +109,10 @@ inline void addProgram(size_t id, pid_t pid, u8 priority, u32 cpsr,
 void hilevel_handler_rst(ctx_t *ctx) {
 	printLine("RESET");
 
-	addProgram(0, 1, 3, 0x50, (u32)&main_P3, (u32)&tos_P3);
-	addProgram(1, 2, 1, 0x50, (u32)&main_P4, (u32)&tos_P4);
-	addProgram(2, 3, 1, 0x50, (u32)&main_P5, (u32)&tos_P5);
+	initProcessTable();
+	startProcess(PRIORITY_HIGHEST, 0x50, (u32)&main_P3, (u32)&tos_P3);
+	startProcess(PRIORITY_NORMAL, 0x50, (u32)&main_P4, (u32)&tos_P4);
+	startProcess(PRIORITY_NORMAL, 0x50, (u32)&main_P5, (u32)&tos_P5);
 
 	printLine(" - Setting current & ctx");
 
