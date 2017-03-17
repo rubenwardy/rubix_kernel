@@ -22,7 +22,7 @@ void main_P3() {
     uint32_t hi = 1 << 16;
 
     for( uint32_t x = lo; x < hi; x++ ) {
-      int r = is_prime( x ); 
+      int r = is_prime( x );
     }
   }
 
