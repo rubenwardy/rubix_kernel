@@ -212,6 +212,8 @@ u32 getProgramInstAddress(const char *name) {
 	} else if (strcmp(name, "p5") == 0) {
 		return (u32)&main_P5;
 	} else {
+		printLine("Unable to find program");
+		printLine(name);
 		return 0;
 	}
 }
@@ -357,11 +359,17 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 		case SYS_EXEC:
 			printLine(" - exec");
 
-			void *addr = (void*)(ctx->gpr[0]);
+			char *path = (char*) ctx->gpr[0];
+			u32 addr = getProgramInstAddress(path);
+			if (addr == 0) {
+				ctx->gpr[0] = -1;
+				return;
+			}
+
 			deallocateStack(current->stack_start);
 			current->stack_start = allocateStack(current->pid);
 			ctx->cpsr = 0x50;
-			ctx->pc = (u32)addr;
+			ctx->pc = addr;
 			for (int i = 0; i < 13; i++) {
 				ctx->gpr[i] = 0;
 			}

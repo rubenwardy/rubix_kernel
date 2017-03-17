@@ -27,18 +27,23 @@ void main_P3() {
     // }
     write( STDOUT_FILENO, "P3", 2 );
 
-    exec((void*)&main_P4);
-
-  // for( int i = 0; i < 50; i++ ) {
-  //   write( STDOUT_FILENO, "P3", 2 );
-  //
-  //   uint32_t lo = 1 <<  8;
-  //   uint32_t hi = 1 << 16;
-  //
-  //   for( uint32_t x = lo; x < hi; x++ ) {
-  //     int r = is_prime( x );
-  //   }
+  // int res = exec("p4");
+  // if (res == -1) {
+  //     write( STDOUT_FILENO, "err", 3 );
+  // } else {
+  //     write( STDOUT_FILENO, "oth", 3 );
   // }
+
+  for( int i = 0; i < 50; i++ ) {
+    write( STDOUT_FILENO, "P3", 2 );
+
+    uint32_t lo = 1 <<  8;
+    uint32_t hi = 1 << 16;
+
+    for( uint32_t x = lo; x < hi; x++ ) {
+      int r = is_prime( x );
+    }
+  }
 
   exit( EXIT_SUCCESS );
 }
