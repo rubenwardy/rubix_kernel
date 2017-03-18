@@ -17,14 +17,31 @@ int is_prime( uint32_t x ) {
 extern void main_P4();
 
 void main_P3() {
-    // int res = fork();
-    // if (res == -1) {
-    //     write( STDOUT_FILENO, "error", 5);
-    // } else if (res == 0) {
-    //     write( STDOUT_FILENO, "child", 5);
-    // } else {
-    //     write( STDOUT_FILENO, "parent", 6);
-    // }
+    int res = fork();
+    if (res == -1) {
+        write( STDOUT_FILENO, "error", 5);
+    } else if (res == 0) {
+        write( STDOUT_FILENO, "child", 5);
+    } else {
+        write( STDOUT_FILENO, "parent", 6);
+        int code;
+        int pid = waitpid(res, &code);
+        if (pid == res) {
+            write( STDOUT_FILENO, "cpid", 4);
+        } else {
+            write( STDOUT_FILENO, "wpid", 4);
+        }
+
+        if (code == 5) {
+            write( STDOUT_FILENO, "5", 1);
+        } else {
+            write( STDOUT_FILENO, "n5", 2);
+        }
+
+        exit(EXIT_SUCCESS);
+
+        write( STDOUT_FILENO, "!!! ERR !!!", 11);
+    }
     write( STDOUT_FILENO, "P3", 2 );
 
   // int res = exec("p4");
@@ -45,5 +62,5 @@ void main_P3() {
     }
   }
 
-  exit( EXIT_SUCCESS );
+  exit( 5 );
 }

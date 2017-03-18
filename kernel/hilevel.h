@@ -34,6 +34,12 @@ typedef uint8_t  u8;
  * - a type that captures a process PCB.
  */
 
+typedef enum {
+    NOT_BLOCKED,
+    BLOCKED_PROCESS,
+    BLOCKED_FILE
+} BlockedReason;
+
 
 #define MAX_PROCESSES 10
 // ^ Linux is 31,000 per user
@@ -65,7 +71,7 @@ typedef struct {
   u8 priority;
   u32 time_since_last_ran;
   u32 stack_start;
-  u32 blocked;
+  BlockedReason blocked;
 } pcb_t;
 
 #endif

@@ -1,5 +1,6 @@
 #include "hilevel.h"
 #include "scheduler.h"
+#include "blockedqueue.h"
 #include "utils.h"
 
 //
@@ -175,6 +176,10 @@ void switchTo(ctx_t* ctx, int id)
 	memcpy(ctx, &processes[id].ctx, sizeof(ctx_t));
 	current = &processes[id];
 	processes[id].time_since_last_ran = 0;
+
+	if (current->blocked != NOT_BLOCKED) {
+		printLine("############### SWITCHING TO BLOCKED PROCESS ###############");
+	}
 }
 
 
@@ -222,6 +227,7 @@ void hilevel_handler_rst(ctx_t *ctx) {
 
 	initProcessTable();
 	scheduler_init();
+	blockedqueue_init();
 	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p3"));
 	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p4"));
 	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p5"));
@@ -291,6 +297,7 @@ void hilevel_handler_irq(ctx_t *ctx) {
 #define SYS_EXIT      ( 0x04 )
 #define SYS_EXEC      ( 0x05 )
 #define SYS_KILL      ( 0x06 )
+#define SYS_WAIT      ( 0x07 )
 void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 	printLine("SVC");
 
@@ -348,6 +355,22 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			break;
 		case SYS_EXIT:
 			printLine(" - exit");
+
+			// Check for processes that are wait*()-ing for exit code
+			BlockedProcess *bl = blockedqueue_popNextProcessExit(current->pid);
+			if (bl) {
+				size_t id = findProcessByPID(bl->pid);
+				if (id < SIZE_MAX) {
+					pcb_t *proc = &processes[id];
+					proc->ctx.gpr[0] = current->pid;
+					*bl->ret1 = (int)ctx->gpr[0];
+					proc->blocked = NOT_BLOCKED;
+					scheduler_add(proc->pid, proc->priority);
+				} else {
+					printLine("unable to find process.");
+				}
+			}
+
 			removeProcess(current->pid);
 			current = 0;
 			scheduler(ctx);
@@ -373,6 +396,19 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			ctx->lr = 0;
 
 			break;
+		case SYS_WAIT:
+			printLine(" - wait");
+
+			pid_t pid   = (pid_t) ctx->gpr[0];
+			int *status = (int*)  ctx->gpr[1];
+
+			scheduler_remove(current->pid);
+			current->blocked = BLOCKED_PROCESS;
+			blockedqueue_addProcessExit(current->pid, pid, status);
+			scheduler(ctx);
+
+			break;
+
 		case SYS_KILL:
 			printLine(" - kill unimplemented");
 			break;

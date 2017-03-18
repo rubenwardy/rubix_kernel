@@ -118,6 +118,19 @@ int exec( char* x ) {
   return r;
 }
 
+pid_t waitpid( pid_t pid, int *status_code ) {
+      pid_t r;
+      asm volatile( "mov r0, %2 \n" // assign r0 = pid
+                    "mov r1, %3 \n" // assign r1 = status code
+                    "svc %1     \n" // make system call SYS_EXEC
+                    "mov %0, r0 \n" // assign r  = r0
+                  : "=r" (r)
+                  : "I" (SYS_WAIT), "r" (pid), "r" (status_code)
+                  : "r0" );
+
+      return r;
+}
+
 int kill( int pid, int x ) {
   int r;
 
