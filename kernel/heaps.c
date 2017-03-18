@@ -66,10 +66,12 @@ bool heaps_remove(MaxHeap *x, pid_t pid) {
 	for (size_t i = 0; i < x->num_items; i++) {
 		if (x->items[i].pid == pid) {
 			x->num_items--;
-			if (i < x->num_items - 1) {
+			if (i < x->num_items) {
 				x->items[i] = x->items[x->num_items];
 				maxHeapify(x, i);
 			}
+			printNum(x->num_items);
+			printf("\n");
 			return true;
 		}
 	}
