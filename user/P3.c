@@ -25,7 +25,7 @@ void main_P3() {
     } else {
         write( STDOUT_FILENO, "parent", 6);
         int code;
-        int pid = waitpid(res, &code);
+        int pid = wait(&code);
         if (pid == res) {
             write( STDOUT_FILENO, "cpid", 4);
         } else {

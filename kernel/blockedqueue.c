@@ -43,9 +43,11 @@ void blockedqueue_addProcessExit(pid_t pid, pid_t other, int *status) {
 	}
 }
 
-BlockedProcess *blockedqueue_popNextProcessExit(pid_t pid) {
+BlockedProcess *blockedqueue_popNextProcessExit(pid_t pid, pid_t parent) {
 	BlockedProcess *ret = head_process;
-	while (ret && ret->other != pid) {
+
+	while (ret && ret->other != pid &&
+			(ret->other != 0 || ret->pid != parent)) {
 		ret = ret->next;
 	}
 	return ret;

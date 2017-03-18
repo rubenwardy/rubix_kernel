@@ -13,6 +13,6 @@ typedef struct BlockedProcess BlockedProcess;
 
 extern void blockedqueue_init();
 extern void blockedqueue_addProcessExit(pid_t pid, pid_t other, int *status);
-extern BlockedProcess *blockedqueue_popNextProcessExit(pid_t pid);
+extern BlockedProcess *blockedqueue_popNextProcessExit(pid_t pid, pid_t parent);
 
 #endif

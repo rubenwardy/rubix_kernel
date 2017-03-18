@@ -358,7 +358,7 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			printLine(" - exit");
 
 			// Check for processes that are wait*()-ing for exit code
-			BlockedProcess *bl = blockedqueue_popNextProcessExit(current->pid);
+			BlockedProcess *bl = blockedqueue_popNextProcessExit(current->pid, current->parent);
 			if (bl) {
 				size_t id = findProcessByPID(bl->pid);
 				if (id < SIZE_MAX) {
