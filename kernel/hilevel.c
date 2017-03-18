@@ -1,12 +1,11 @@
 #include "hilevel.h"
+#include "scheduler.h"
 #include "utils.h"
 
 //
 // PROCESS MANAGEMENT
 //
 
-#define MAX_PROCESSES 10
-// ^ Linux is 31,000 per user
 
 pcb_t processes[MAX_PROCESSES];
 pcb_t *current = NULL;
@@ -59,6 +58,8 @@ void removeProcess(pid_t pid) {
 	printNum(ptr);
 	printf("\n");
 	processes[ptr].pid = 0;
+
+	scheduler_remove(pid);
 }
 
 size_t getNumProcesses() {
@@ -130,6 +131,8 @@ inline pid_t startProcess(u8 priority, u32 cpsr, u32 pc) {
 	processes[id].ctx.pc   = pc;
 	processes[id].ctx.sp   = sp;
 
+	scheduler_add(pid, priority);
+
 	return pid;
 }
 
@@ -155,6 +158,8 @@ inline pid_t startProcessByCtx(u8 priority, ctx_t *ctx) {
 	processes[id].time_since_last_ran = 0;
 	memcpy(&processes[id].ctx, ctx, sizeof(ctx_t));
 
+	scheduler_add(pid, priority);
+
 	return pid;
 }
 
@@ -178,22 +183,12 @@ void switchTo(ctx_t* ctx, int id)
 //
 void scheduler(ctx_t* ctx)
 {
-	int best_id = -1;
-	int best_priority = -1;
-	for (int i = 0; i < getNumProcesses(); i++) {
-		pcb_t *prog = &processes[i];
-		int priority = prog->priority + prog->time_since_last_ran++;
-		if (priority > best_priority) {
-			best_id = i;
-			best_priority = priority;
-		}
-	}
+	pid_t  next = scheduler_getNext();
+	size_t id   = findProcessByPID(next);
 
-	if (best_id >= 0) {
-		printLine("switching!");
-		switchTo(ctx, best_id);
-	} else {
-		printLine("No processes found to switch to!");
+	if (id != SIZE_MAX) {
+		scheduler_add(next, processes[id].priority);
+		switchTo(ctx, id);
 	}
 }
 
@@ -226,6 +221,7 @@ void hilevel_handler_rst(ctx_t *ctx) {
 	printLine("RESET");
 
 	initProcessTable();
+	scheduler_init();
 	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p3"));
 	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p4"));
 	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p5"));

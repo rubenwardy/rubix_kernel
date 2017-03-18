@@ -1,4 +1,5 @@
 #include "heaps.h"
+#include "utils.h"
 
 size_t parent(size_t i) {
 	return i / 2;
@@ -53,22 +54,54 @@ void heaps_init(MaxHeap *x) {
 	x->num_items = 0;
 }
 
-void heaps_insert(MaxHeap *x, int weight, pid_t data) {
+void heaps_insert(MaxHeap *x, int weight, pid_t pid) {
 	MaxHeapItem item;
 	item.weight = -10000;
-	item.data = data;
+	item.pid = pid;
 	x->items[x->num_items++] = item;
 	increaseKey(x, x->num_items - 1, weight);
 }
 
-pid_t heaps_extractMax(MaxHeap *x) {
-	if (x->num_items < 1) {
-		return 0;
+bool heaps_remove(MaxHeap *x, pid_t pid) {
+	for (size_t i = 0; i < x->num_items; i++) {
+		if (x->items[i].pid == pid) {
+			x->num_items--;
+			if (i < x->num_items - 1) {
+				x->items[i] = x->items[x->num_items];
+				maxHeapify(x, i);
+			}
+			return true;
+		}
 	}
 
-	pid_t max = x->items[0].data;
+	return false;
+}
+
+MaxHeapItem heaps_extractMax(MaxHeap *x) {
+	if (x->num_items < 1) {
+		MaxHeapItem item = { 0, 0 };
+		return item;
+	}
+
+	MaxHeapItem max = x->items[0];
 	x->items[0] = x->items[x->num_items - 1];
 	x->num_items--;
-	maxHeapify(x, 1);
+	maxHeapify(x, 0);
 	return max;
+}
+
+void heaps_increaseAll(MaxHeap *x, int v) {
+	for (int i = 0; i < x->num_items; i++) {
+		x->items[i].weight += v;
+	}
+}
+
+void heaps_print(MaxHeap *x) {
+	for (int i = 0; i < x->num_items; i++) {
+		printNum(x->items[i].pid);
+		printf("(");
+		printNum(x->items[i].weight);
+		printf(") ");
+	}
+	printf("\n");
 }
