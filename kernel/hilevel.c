@@ -348,6 +348,7 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 				new->ctx.sp = new->stack_start - offset;
 				memcpy((u32*)new->ctx.sp, (u32*)ctx->sp, offset);
 				new->ctx.gpr[0] = 0;
+				new->parent = current->pid;
 			} else {
 				ctx->gpr[0] = -1;
 			}

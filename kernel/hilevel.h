@@ -67,6 +67,7 @@ typedef struct {
 
 typedef struct {
   pid_t pid;
+  pid_t parent;
   ctx_t ctx;
   u8 priority;
   u32 time_since_last_ran;
