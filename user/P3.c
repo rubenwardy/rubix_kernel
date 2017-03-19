@@ -46,8 +46,7 @@ void main_P3() {
         }
 
         exit(EXIT_SUCCESS);
-
-        write( STDOUT_FILENO, "!!! ERR !!!", 11);
+        return;
     }
     write( STDOUT_FILENO, "P3", 2 );
 

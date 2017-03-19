@@ -18,16 +18,4 @@ struct INode {
 };
 typedef struct INode INode;
 
-typedef enum {
-	OPERATION_STICKY  = 0b1000,
-	OPERATION_READ    = 0b0100,
-	OPERATION_WRITE   = 0b0010,
-	OPERATION_EXEC    = 0b0001
-} Operation;
-
-extern void inode_init();
-extern INode *inode_create(u32 user, u32 group);
-extern INode *inode_get(u32 id);
-extern bool inode_check_perm(INode *node, u32 user, u32 group, Operation op);
-
 #endif

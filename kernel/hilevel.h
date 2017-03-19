@@ -73,6 +73,7 @@ typedef struct {
   u32 time_since_last_ran;
   u32 stack_start;
   BlockedReason blocked;
+  u32 fid_counter;
 } pcb_t;
 
 #endif
