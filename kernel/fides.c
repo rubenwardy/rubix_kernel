@@ -57,6 +57,21 @@ size_t fides_duplicate_all(pid_t oldpid, pid_t pid) {
 	return num_created;
 }
 
+int fides_drop(pid_t pid, u32 fid) {
+	FiDes *fides = fides_get(pid, fid);
+	if (!fides) {
+		return 0;
+	}
+
+	if (fides->drop) {
+		fides->drop(fides);
+	} else {
+		printLine("No drop found!");
+	}
+	memset(fides, 0, sizeof(FiDes));
+	return 1;
+}
+
 void fides_dropall(pid_t pid) {
 	for (int i = 0; i < MAX_INODES; i++) {
 		if (fidess[i].pid == pid) {
@@ -75,5 +90,6 @@ FiDes *fides_get(pid_t pid, u32 id) {
 		}
 	}
 
+	printLine("Failed to find fides");
 	return 0;
 }

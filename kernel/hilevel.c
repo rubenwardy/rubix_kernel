@@ -313,6 +313,7 @@ void hilevel_handler_irq(ctx_t *ctx) {
 #define SYS_KILL      ( 0x06 )
 #define SYS_WAIT      ( 0x07 )
 #define SYS_PIPE      ( 0x08 )
+#define SYS_CLOSE     ( 0x09 )
 void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 	printLine("SVC");
 
@@ -357,6 +358,7 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			FiDes *node = fides_get(current->pid, fd );
 			if (node) {
 				if (node->read) {
+					// FIXME: don't return zero unless E.O.F.
 					ctx->gpr[0] = node->read(node, x, n);
 				} else {
 					printLine("Operation not permitted");
@@ -458,6 +460,20 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 				ctx->gpr[0] = -1;
 			}
 
+			break;
+
+		case SYS_CLOSE:
+			printf(" - close ");
+
+			int   fd = (int  )(ctx->gpr[0]);
+			printNum(fd);
+			printf("\n");
+
+			if (fides_drop(current->pid, fd)) {
+				ctx->gpr[0] = 0;
+			} else {
+				ctx->gpr[0] = -1;
+			}
 			break;
 
 		case SYS_KILL:

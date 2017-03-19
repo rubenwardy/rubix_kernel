@@ -32,6 +32,7 @@ typedef int pid_t;
 #define SYS_KILL      ( 0x06 )
 #define SYS_WAIT      ( 0x07 )
 #define SYS_PIPE      ( 0x08 )
+#define SYS_CLOSE     ( 0x09 )
 
 #define SIG_TERM      ( 0x00 )
 #define SIG_QUIT      ( 0x01 )
@@ -67,6 +68,8 @@ extern pid_t waitpid( pid_t pid, int *status_code );
 inline pid_t wait(int *status_code) { return waitpid(0, status_code); }
 
 extern int pipe(int fd[2]);
+
+extern int close(int fd);
 
 // signal process identified by pid with signal x
 extern int  kill( pid_t pid, int x );
