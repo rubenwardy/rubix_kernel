@@ -29,8 +29,18 @@ void main_P3() {
         write( STDOUT_FILENO, "error", 5);
     } else if (res == 0) {
         write( STDOUT_FILENO, "child", 5);
+        write(fd[1], "hello", 5);
     } else {
         write( STDOUT_FILENO, "parent", 6);
+
+        char buffer[100];
+        size_t size = 0;
+        while ((size = read(fd[0], buffer, 100)) == 0) {
+            yield();
+        }
+
+        write(STDOUT_FILENO, buffer, size);
+
         int code;
         int pid = wait(&code);
         if (pid == res) {

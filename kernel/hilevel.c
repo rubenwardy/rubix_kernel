@@ -354,18 +354,18 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			char*  x = (char*)(ctx->gpr[1]);
 			int    n = (int  )(ctx->gpr[2]);
 
-			FiDes *node = fides_get(current->pid, fd + 1);
+			FiDes *node = fides_get(current->pid, fd );
 			if (node) {
 				if (node->read) {
-					node->read(node, x, n);
+					ctx->gpr[0] = node->read(node, x, n);
 				} else {
 					printLine("Operation not permitted");
+					ctx->gpr[0] = 0;
 				}
 			} else {
 				printLine("Unable to find fides to write to.");
+				ctx->gpr[0] = 0;
 			}
-
-			ctx->gpr[0] = n;
 			break;
 		}
 		case SYS_FORK:
@@ -446,13 +446,13 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 		case SYS_PIPE:
 			printLine(" - pipe");
 
-			FiDes *node1 = fides_create(current->pid, current->fid_counter++);
-			FiDes *node2 = fides_create(current->pid, current->fid_counter++);
-			if (node1 && node2) {
-				fides_pipe_create(node1, node2);
+			FiDes *p_out = fides_create(current->pid, current->fid_counter++);
+			FiDes *p_in = fides_create(current->pid, current->fid_counter++);
+			if (p_out && p_in) {
+				fides_pipe_create(p_out, p_in);
 				int *fd  = (int*)ctx->gpr[0];
-				*(&fd[0]) = (int)node1->id;
-				*(&fd[1]) = (int)node2->id;
+				*(&fd[0]) = (int)p_out->id;
+				*(&fd[1]) = (int)p_in->id;
 				ctx->gpr[0] = 0;
 			} else {
 				ctx->gpr[0] = -1;
