@@ -17,6 +17,13 @@ int is_prime( uint32_t x ) {
 extern void main_P4();
 
 void main_P3() {
+    int fd[2];
+    if (pipe(fd) == -1) {
+        write( STDOUT_FILENO, "perror", 5);
+        exit(1);
+        return;
+    }
+
     int res = fork();
     if (res == -1) {
         write( STDOUT_FILENO, "error", 5);

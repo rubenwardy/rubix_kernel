@@ -1,6 +1,9 @@
 #include "hilevel.h"
 #include "scheduler.h"
 #include "blockedqueue.h"
+#include "inode.h"
+#include "inode_pipe.h"
+#include "inode_terminal.h"
 #include "utils.h"
 
 //
@@ -222,15 +225,21 @@ u32 getProgramInstAddress(const char *name) {
 //
 // Initialise states
 //
+INode *inode_stdout;
 void hilevel_handler_rst(ctx_t *ctx) {
 	printLine("RESET");
 
 	initProcessTable();
 	scheduler_init();
 	blockedqueue_init();
+	inode_init();
+	inode_pipe_init();
 	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p3"));
 	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p4"));
 	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p5"));
+
+	inode_stdout = inode_create(1, 1);
+	inode_terminal_create(inode_stdout);
 
 	printLine(" - Setting current & ctx");
 
@@ -298,6 +307,7 @@ void hilevel_handler_irq(ctx_t *ctx) {
 #define SYS_EXEC      ( 0x05 )
 #define SYS_KILL      ( 0x06 )
 #define SYS_WAIT      ( 0x07 )
+#define SYS_PIPE      ( 0x08 )
 void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 	printLine("SVC");
 
@@ -314,8 +324,16 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			char*  x = (char*)(ctx->gpr[1]);
 			int    n = (int  )(ctx->gpr[2]);
 
-			for (int i = 0; i < n; i++) {
-				PL011_putc(UART0, *x++, true);
+			// TODO: support file descriptors
+			INode *node = inode_get(fd);
+			if (node) {
+				if (inode_check_perm(node, 1, 1, OPERATION_WRITE)) {
+					node->write(node, x, n);
+				} else {
+					printLine("Operation not permitted");
+				}
+			} else {
+				printLine("Unable to find inode to write to.");
 			}
 
 			ctx->gpr[ 0 ] = n;
@@ -328,8 +346,16 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			char*  x = (char*)(ctx->gpr[1]);
 			int    n = (int  )(ctx->gpr[2]);
 
-			for (int i = 0; i < n; i++ ) {
-				*x++ = PL011_getc(UART0, true);
+			// TODO: support file descriptors
+			INode *node = inode_get(fd + 1);
+			if (node) {
+				if (inode_check_perm(node, 1, 1, OPERATION_READ)) {
+					node->read(node, x, n);
+				} else {
+					printLine("Operation not permitted");
+				}
+			} else {
+				printLine("Unable to find inode to write to.");
 			}
 
 			ctx->gpr[0] = n;
@@ -407,6 +433,23 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			current->blocked = BLOCKED_PROCESS;
 			blockedqueue_addProcessExit(current->pid, pid, status);
 			scheduler(ctx);
+
+			break;
+
+		case SYS_PIPE:
+			printLine(" - pipe");
+
+			INode *node1 = inode_create(1, 1);
+			INode *node2 = inode_create(1, 1);
+			if (node1 && node2) {
+				inode_pipe_create(node1, node2);
+				int *fd  = (int*)ctx->gpr[0];
+				*(&fd[0]) = (int)node1->id;
+				*(&fd[1]) = (int)node1->id;
+				ctx->gpr[0] = 0;
+			} else {
+				ctx->gpr[0] = -1;
+			}
 
 			break;
 

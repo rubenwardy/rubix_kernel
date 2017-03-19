@@ -31,6 +31,7 @@ typedef int pid_t;
 #define SYS_EXEC      ( 0x05 )
 #define SYS_KILL      ( 0x06 )
 #define SYS_WAIT      ( 0x07 )
+#define SYS_PIPE      ( 0x08 )
 
 #define SIG_TERM      ( 0x00 )
 #define SIG_QUIT      ( 0x01 )
@@ -64,6 +65,8 @@ extern int exec( char* x );
 // perform blocking wait for child's exit code
 extern pid_t waitpid( pid_t pid, int *status_code );
 inline pid_t wait(int *status_code) { return waitpid(0, status_code); }
+
+extern int pipe(int fd[2]);
 
 // signal process identified by pid with signal x
 extern int  kill( pid_t pid, int x );
