@@ -10,206 +10,6 @@
 // PROCESS MANAGEMENT
 //
 
-
-pcb_t processes[MAX_PROCESSES];
-pcb_t *current = NULL;
-pid_t pid_count = 0;
-
-void initProcessTable() {
-	memset(&processes[0], 0, sizeof(pcb_t) * MAX_PROCESSES);
-}
-
-size_t findProcessByPID(pid_t pid) {
-	for (int i = 0; i < MAX_PROCESSES; i++) {
-		pcb_t *process = &processes[i];
-		if (process->pid == 0) {
-			break;
-		} else if (process->pid == pid) {
-			return i;
-		}
-	}
-	return SIZE_MAX;
-}
-
-void removeProcess(pid_t pid) {
-	int ptr = 0;
-	for (; ptr < MAX_PROCESSES; ptr++) {
-		pcb_t *process = &processes[ptr];
-		if (process->pid == 0) {
-			printLine("Can't remove process if it doesn't exist!");
-			return;
-		} else if (process->pid == pid) {
-			break;
-		}
-	}
-
-	printf("Found pid at ");
-	printNum(ptr);
-	printf("\n");
-
-	while (ptr + 1 < MAX_PROCESSES && processes[ptr + 1].pid != 0) {
-		printf("Switching ");
-		printNum(ptr);
-		printf(" and ");
-		printNum(ptr + 1);
-		printf("\n");
-
-		memcpy(&processes[ptr], &processes[ptr + 1], sizeof(pcb_t));
-		ptr++;
-	}
-
-	printf("Setting to 0: ");
-	printNum(ptr);
-	printf("\n");
-	processes[ptr].pid = 0;
-
-	scheduler_remove(pid);
-	fides_dropall(pid);
-}
-
-size_t getNumProcesses() {
-	int ptr = 0;
-	while (ptr < MAX_PROCESSES && processes[ptr].pid != 0) {
-		ptr++;
-	}
-	return ptr;
-}
-
-typedef struct {
-	pid_t pid;
-} Page;
-
-
-extern u32 tos_UserSpace;
-#define PAGE_SIZE 0x800
-#define MAX_PAGES 0x0010000 / PAGE_SIZE
-Page pages[MAX_PAGES];
-
-u32 allocateStack(pid_t pid) {
-	size_t ptr = 0;
-	while (pages[ptr].pid != 0) {
-		ptr++;
-	}
-
-	pages[ptr].pid = pid;
-
-	printf("Allocated page ");
-	printNum(ptr);
-	printf(" to pid=");
-	printNum(pid);
-	printf("\n");
-
-	return (u32)&tos_UserSpace - ptr * PAGE_SIZE;
-}
-
-void deallocateStack(uint32_t stack_start) {
-	// TODO: house cleaning
-}
-
-inline pid_t startProcess(u8 priority, u32 cpsr, u32 pc) {
-	if (pc == 0) {
-		printLine("Unable to start process with null instructions");
-	}
-
-	size_t id = getNumProcesses();
-	pid_t pid = ++pid_count;
-
-	if (id == MAX_PROCESSES) {
-		printLine("Unable to start process as maximum processes limit was reached");
-		return 0;
-	}
-
-	printf("Starting process pid=");
-	printNum(pid);
-	printf(" at pcb=");
-	printNum(id);
-	printf("\n");
-
-	u32 sp = allocateStack(pid);
-
-	memset(&processes[id], 0, sizeof(pcb_t));
-	processes[id].pid      = pid;
-	processes[id].priority = priority;
-	processes[id].stack_start = sp;
-	processes[id].time_since_last_ran = 0;
-	processes[id].ctx.cpsr = cpsr;
-	processes[id].ctx.pc   = pc;
-	processes[id].ctx.sp   = sp;
-
-	FiDes *fd_in = fides_create(pid, 0);
-	FiDes *fd_out = fides_create(pid, 1);
-	processes[id].fid_counter = 2;
-	fides_terminal_create(fd_out, fd_in);
-
-	scheduler_add(pid, priority);
-
-	return pid;
-}
-
-inline pid_t startProcessByCtx(u8 priority, pid_t oldpid, ctx_t *ctx) {
-	size_t id = getNumProcesses();
-	pid_t pid = ++pid_count;
-
-	if (id == MAX_PROCESSES) {
-		printLine("Unable to start process as maximum processes limit was reached");
-		return 0;
-	}
-
-	printf("Starting process pid=");
-	printNum(pid);
-	printf(" at pcb=");
-	printNum(id);
-	printf("\n");
-
-	memset(&processes[id], 0, sizeof(pcb_t));
-	processes[id].pid      = pid;
-	processes[id].priority = priority;
-	processes[id].stack_start = 0;
-	processes[id].time_since_last_ran = 0;
-	memcpy(&processes[id].ctx, ctx, sizeof(ctx_t));
-
-	processes[id].fid_counter = fides_duplicate_all(oldpid, pid);
-
-	scheduler_add(pid, priority);
-
-	return pid;
-}
-
-void switchTo(ctx_t* ctx, int id)
-{
-	printf("=========== ");
-	printNum(processes[id].pid);
-	printf(" ===========\n");
-
-	if (current) {
-		memcpy(&current->ctx, ctx, sizeof(ctx_t));
-	}
-	memcpy(ctx, &processes[id].ctx, sizeof(ctx_t));
-	current = &processes[id];
-	processes[id].time_since_last_ran = 0;
-
-	if (current->blocked != NOT_BLOCKED) {
-		printLine("############### SWITCHING TO BLOCKED PROCESS ###############");
-	}
-}
-
-
-//
-// PROCESS SCHEDULER
-//
-void scheduler(ctx_t* ctx)
-{
-	pid_t  next = scheduler_getNext();
-	size_t id   = findProcessByPID(next);
-
-	if (id != SIZE_MAX) {
-		scheduler_add(next, processes[id].priority);
-		switchTo(ctx, id);
-	}
-}
-
-
-
 // We're using staticly linked programs
 extern void main_P3();
 extern void main_P4();
@@ -237,18 +37,18 @@ FiDes *fides_stdout;
 void hilevel_handler_rst(ctx_t *ctx) {
 	printLine("RESET");
 
-	initProcessTable();
+	processes_init();
 	scheduler_init();
 	blockedqueue_init();
 	fides_init();
 	fides_pipe_init();
-	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p3"));
-	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p4"));
-	startProcess(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p5"));
+	processes_start(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p3"));
+	processes_start(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p4"));
+	processes_start(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p5"));
 
 	printLine(" - Setting current & ctx");
 
-	switchTo(ctx, 0);
+	processes_switchTo(ctx, 0);
 
 	printLine(" - Initialising timer and GIC");
 
@@ -289,7 +89,7 @@ void hilevel_handler_irq(ctx_t *ctx) {
 	if (id == GIC_SOURCE_TIMER0) {
 		PL011_putc(UART0, 'T', true);
 		TIMER0->Timer1IntClr = 0x01;
-		scheduler(ctx);
+		processes_runScheduler(ctx);
 	}
 
 	// Step 5: write the interrupt identifier to signal we're done.
@@ -298,7 +98,6 @@ void hilevel_handler_irq(ctx_t *ctx) {
 
 	printLine(" - done");
 }
-
 
 
 //
@@ -317,10 +116,12 @@ void hilevel_handler_irq(ctx_t *ctx) {
 void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 	printLine("SVC");
 
+	pcb_t *current = processes_getCurrent();
+
 	switch (id) {
 		case SYS_YIELD: {
 			printLine(" - scheduler");
-			scheduler(ctx);
+			processes_runScheduler(ctx);
 			break;
 		}
 		case SYS_WRITE: {
@@ -373,13 +174,13 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 		case SYS_FORK:
 			printLine(" - fork");
 
-			size_t new_id = findProcessByPID(startProcessByCtx(current->priority, current->pid, ctx));
+			size_t new_id = processes_findByPID(processes_startByCtx(current->priority, current->pid, ctx));
 			if (new_id != SIZE_MAX) {
-				pcb_t *new = &processes[new_id];
+				pcb_t *new = processes_get(new_id);
 				ctx->gpr[0] = new->pid;
 
 				u32 offset = current->stack_start - ctx->sp;
-				new->stack_start = allocateStack(new->pid);
+				new->stack_start = processes_allocateStack(new->pid);
 				new->ctx.sp = new->stack_start - offset;
 				memcpy((u32*)new->ctx.sp, (u32*)ctx->sp, offset);
 				new->ctx.gpr[0] = 0;
@@ -395,9 +196,9 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			// Check for processes that are wait*()-ing for exit code
 			BlockedProcess *bl = blockedqueue_popNextProcessExit(current->pid, current->parent);
 			if (bl) {
-				size_t id = findProcessByPID(bl->pid);
+				size_t id = processes_findByPID(bl->pid);
 				if (id < SIZE_MAX) {
-					pcb_t *proc = &processes[id];
+					pcb_t *proc = processes_get(id);
 					proc->ctx.gpr[0] = current->pid;
 					*bl->ret1 = (int)ctx->gpr[0];
 					proc->blocked = NOT_BLOCKED;
@@ -407,9 +208,9 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 				}
 			}
 
-			removeProcess(current->pid);
+			processes_remove(current->pid);
 			current = 0;
-			scheduler(ctx);
+			processes_runScheduler(ctx);
 			break;
 		case SYS_EXEC:
 			printLine(" - exec");
@@ -421,8 +222,8 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 				return;
 			}
 
-			deallocateStack(current->stack_start);
-			current->stack_start = allocateStack(current->pid);
+			processes_deallocateStack(current->stack_start);
+			current->stack_start = processes_allocateStack(current->pid);
 			ctx->cpsr = 0x50;
 			ctx->pc = addr;
 			for (int i = 0; i < 13; i++) {
@@ -441,7 +242,7 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			scheduler_remove(current->pid);
 			current->blocked = BLOCKED_PROCESS;
 			blockedqueue_addProcessExit(current->pid, pid, status);
-			scheduler(ctx);
+			processes_runScheduler(ctx);
 
 			break;
 
