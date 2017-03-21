@@ -210,3 +210,8 @@ void processes_runScheduler(ctx_t* ctx)
 		processes_switchTo(ctx, id);
 	}
 }
+
+extern void processes_unblockProcess(pcb_t *pcb) {
+	pcb->blocked = NOT_BLOCKED;
+	scheduler_add(pcb->pid, pcb->priority);
+}

@@ -22,8 +22,6 @@ typedef enum {
 #define MAX_PROCESSES 10
 // ^ Linux is 31,000 per user
 
-typedef int pid_t;
-
 typedef struct {
   uint32_t cpsr;    // Current program status register
   uint32_t pc;      // Program counter
@@ -66,5 +64,6 @@ extern pid_t processes_start(u8 priority, u32 cpsr, u32 pc);
 extern pid_t processes_startByCtx(u8 priority, pid_t oldpid, ctx_t *ctx);
 extern void processes_switchTo(ctx_t* ctx, int id);
 extern void processes_runScheduler(ctx_t* ctx);
+extern void processes_unblockProcess(pcb_t *pcb);
 
 #endif

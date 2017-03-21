@@ -1,5 +1,8 @@
 # Rubix OS
 
+Hedgehog logo © Laymik, licensed under CC-BY 3.0 US.
+https://thenounproject.com/term/hedgehog/582725/
+
 ## References
 
 All references access March 2017.

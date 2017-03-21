@@ -1,4 +1,5 @@
 #include "fides_pipe.h"
+#include "blockedqueue.h"
 #include "utils.h"
 
 #define PIPE_MAX_BUFFER 0x400
@@ -19,7 +20,14 @@ void fides_pipe_init() {
 
 size_t fides_pipe_read (FiDes *node, char *data, size_t max) {
 	PipeBuffer *pipe = &pipe_buffers[node->data];
+	if (pipe->refs_read == 0 && pipe->buffer_size == 0) {
+		return 0;
+	}
+
 	size_t to_read = min(pipe->buffer_size, max);
+	if (to_read == 0) {
+		return SIZE_MAX;
+	}
 	memcpy(&data[0], &pipe->buffer[0], sizeof(char) * to_read);
 
 	printf("[pipe] Reading from buffer ");
@@ -48,6 +56,8 @@ size_t fides_pipe_write(FiDes *node, const char *data, size_t len) {
 
 	memcpy(&pipe->buffer[pipe->buffer_size], &data[0], sizeof(char) * to_write);
 	pipe->buffer_size += to_write;
+
+	blockedqueue_checkForBlockedPipes(node->data);
 
 	return to_write;
 }
@@ -98,4 +108,8 @@ void fides_pipe_create(FiDes *one, FiDes *two) {
 	pipe_buffers[ptr].refs_read = 1;
 	pipe_buffers[ptr].refs_write = 1;
 	// memset(&pipe_buffers[ptr].buffer[0], 0, sizeof(char) * PIPE_MAX_BUFFER);
+}
+
+int fides_pipe_is_pipe(FiDes *fides) {
+	return fides->read == &fides_pipe_read || fides->write == &fides_pipe_write;
 }

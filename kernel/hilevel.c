@@ -6,10 +6,6 @@
 #include "fides_terminal.h"
 #include "utils.h"
 
-//
-// PROCESS MANAGEMENT
-//
-
 // We're using staticly linked programs
 extern void main_P3();
 extern void main_P4();
@@ -133,6 +129,11 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			printNum(fd);
 			printf(" size ");
 			printNum(n);
+			printf(": ");
+			char *x1 = x;
+			for (int i = 0; i < n; i++) {
+				PL011_putc(UART0, *x1++, true);
+			}
 			printf("\n");
 
 			FiDes *node = fides_get(current->pid, fd);
@@ -159,8 +160,16 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			FiDes *node = fides_get(current->pid, fd );
 			if (node) {
 				if (node->read) {
-					// FIXME: don't return zero unless E.O.F.
-					ctx->gpr[0] = node->read(node, x, n);
+					size_t res = node->read(node, x, n);
+					if (res == SIZE_MAX) {
+						printLine(" - blocked");
+						scheduler_remove(current->pid);
+						current->blocked = BLOCKED_FILE;
+						blockedqueue_addFileRead(current->pid, fd, x, n);
+						processes_runScheduler(ctx);
+					} else {
+						ctx->gpr[0] = res;
+					}
 				} else {
 					printLine("Operation not permitted");
 					ctx->gpr[0] = 0;

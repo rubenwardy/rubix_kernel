@@ -37,14 +37,16 @@ void main_P3() {
 
         close(fd[1]);
         char buffer[100];
-        size_t size = 0;
-        while ((size = read(fd[0], buffer, 100)) == 0) {
-            yield();
+        size_t size = read(fd[0], buffer, 100);
+        if (size == 0) {
+            write( STDOUT_FILENO, "eof", 3);
+        } else {
+            write( STDOUT_FILENO, "remaining", 3);
         }
         close(fd[0]);
         write(STDOUT_FILENO, buffer, size);
 
-        int code;
+        int code;;
         int pid = wait(&code);
         if (pid == res) {
             write( STDOUT_FILENO, "cpid", 4);
