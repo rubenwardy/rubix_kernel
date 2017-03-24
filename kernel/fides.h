@@ -23,6 +23,7 @@ extern void fides_duplicateAlias(pid_t pid, u32 old, u32 new);
 extern size_t fides_duplicate_all(pid_t oldpid, pid_t pid);
 extern int fides_drop(pid_t pid, u32 fid);
 extern void fides_dropall(pid_t pid);
+extern void fides_dropallOnExec(pid_t pid);
 extern FiDes *fides_get(pid_t pid, u32 id);
 
 #endif

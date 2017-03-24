@@ -207,6 +207,8 @@ u32 svc_handle_exec(ctx_t *ctx, pcb_t *current) {
 		return -1;
 	}
 
+	fides_dropallOnExec(current->pid);
+
 	processes_deallocateStack(current->stack_start);
 	current->stack_start = processes_allocateStack(current->pid);
 	ctx->cpsr = 0x50;

@@ -88,6 +88,24 @@ int fides_drop(pid_t pid, u32 fid) {
 void fides_dropall(pid_t pid) {
 	for (int i = 0; i < MAX_INODES; i++) {
 		if (fidess[i].pid == pid) {
+			printf("[Fides] Dropping open fd, id=");
+			printNum(fidess[i].id);
+			printf("\n");
+			if (fidess[i].drop) {
+				fidess[i].drop(&fidess[i]);
+			}
+			fidess[i].pid = 0;
+		}
+	}
+}
+
+void fides_dropallOnExec(pid_t pid) {
+	for (int i = 0; i < MAX_INODES; i++) {
+		// TODO: add close_on_exec flag
+		if (fidess[i].pid == pid && fidess[i].id > 2) {
+			printf("[Fides] Dropping open fd on exec, id=");
+			printNum(fidess[i].id);
+			printf("\n");
 			if (fidess[i].drop) {
 				fidess[i].drop(&fidess[i]);
 			}
