@@ -12,14 +12,23 @@ https://thenounproject.com/term/hedgehog/582725/
 	* `close` - closes a file descriptor.
 	* `dup2`  - duplicates fd from `old` to `new`. `new` is closed if it already exists.
 	* `pipe`  - creates a pipe. fd[0] is read, fd[1] is write.
-	* `fork`  - clones process. Return value is 0 if child, PID of child if parent, -1 if error.
-	* `exec`  - replaces the process with another program. PID is kept. Stack and FDs are destroyed.
+	* `fork`  - clones process.
+	            Return value is 0 if child, PID of child if parent, -1 if error.
+	* `exec`  - replaces the process with another program. PID is kept.
+	            Stack and FDs (except in/out/err) are destroyed.
 	* `exit`  - exits with exit code.
 	* `wait`  - waits for a child program to exit, and gives exit code.
+	* `kill`  - sends a kill signal to a process. Killed processes will not return an exit code.
+	            `signal` is not yet implemented.
+* LibC help functions
+	* `popen` - opens a process and returns a FD. Uses `fork`, `pipe`, `exec`, and `dup2`.
 * Multi-processing
-	* **time slicing** - timer based timer slices.
-	* **priority-based** - priority(P) = priority_base(P) + slices_since_last_ran(P)
-	* **blocked queue** - for processes waiting for a process or file resource.
+	* **time slicing**      - timer based timer slices.
+	* **priority-based**    - priority(P) = priority_base(P) + slices_since_last_ran(P)
+	* **blocked queue**     - for processes waiting for a process or file resource.
+	* **process ownership** - processes have a parent, which can kill/wait them.
+	* **process groups**    - a limited type of process group, where all processes
+	                          that share a parent and the parent itself are in a group.
 * Objects
 	* `FiDes` - File descriptor. Interacted with using function pointers.
 	* `pipe`  - Pointed to by a FD.

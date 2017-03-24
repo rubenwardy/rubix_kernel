@@ -57,6 +57,8 @@ extern pcb_t *processes_get(size_t i);
 extern pcb_t *processes_getCurrent();
 extern size_t processes_findByPID(pid_t pid);
 extern void processes_remove(pid_t pid);
+extern int processes_sendKill(pid_t pid, int sig);
+extern int processes_sendKillToChildren(pid_t parent_pid, int sig, pid_t pid);
 extern size_t processes_getCount();
 extern u32 processes_allocateStack(pid_t pid);
 extern void processes_deallocateStack(uint32_t stack_start);

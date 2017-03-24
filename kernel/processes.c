@@ -35,20 +35,18 @@ size_t processes_findByPID(pid_t pid) {
 }
 
 void processes_remove(pid_t pid) {
-	int ptr = 0;
-	for (; ptr < MAX_PROCESSES; ptr++) {
-		pcb_t *process = &processes[ptr];
-		if (process->pid == 0) {
-			printLine("Can't remove process if it doesn't exist!");
-			return;
-		} else if (process->pid == pid) {
-			break;
-		}
+	size_t ptr = processes_findByPID(pid);
+	if (ptr == SIZE_MAX) {
+		printLine("Can't remove process if it doesn't exist!");
 	}
 
 	printf("Found pid at ");
 	printNum(ptr);
 	printf("\n");
+	printf("Setting to 0: ");
+	printNum(ptr);
+	printf("\n");
+	processes[ptr].pid = 0;
 
 	while (ptr + 1 < MAX_PROCESSES && processes[ptr + 1].pid != 0) {
 		printf("Switching ");
@@ -59,15 +57,38 @@ void processes_remove(pid_t pid) {
 
 		memcpy(&processes[ptr], &processes[ptr + 1], sizeof(pcb_t));
 		ptr++;
-	}
 
-	printf("Setting to 0: ");
-	printNum(ptr);
-	printf("\n");
-	processes[ptr].pid = 0;
+		if (current && processes[ptr + 1].pid == current->pid) {
+			current = &processes[ptr];
+		}
+	}
 
 	scheduler_remove(pid);
 	fides_dropall(pid);
+}
+
+int processes_sendKill(pid_t pid, int sig) {
+	// TODO: actually send signal to program
+
+	processes_remove(pid);
+
+	return 1;
+}
+
+int processes_sendKillToChildren(pid_t parent_pid, int sig, pid_t pid) {
+	int has_at_least_one_child = 0;
+
+	for (int i = 0; i < MAX_PROCESSES; i++) {
+		pcb_t *process = &processes[i];
+		if (process->pid == 0) {
+			break;
+		} else if (process->parent == parent_pid && (pid == 0 || process->pid == pid)) {
+			processes_sendKill(process->pid, sig);
+			has_at_least_one_child = 1;
+		}
+	}
+
+	return has_at_least_one_child;
 }
 
 size_t processes_getCount() {

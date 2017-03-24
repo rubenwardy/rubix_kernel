@@ -222,7 +222,45 @@ u32 svc_handle_exec(ctx_t *ctx, pcb_t *current) {
 }
 
 u32 svc_handle_kill(ctx_t *ctx, pcb_t *current) {
-	printLine(" - kill unimplemented");
+	printLine(" - kill");
+
+	pid_t pid = (pid_t) ctx->gpr[0];
+	int sig   = (int)  ctx->gpr[1];
+
+	if (pid > 0) {
+		printLine("   - pid exact");
+		if (!processes_sendKill(pid, sig)) {
+			return -1;
+		} else if (current->pid == 0) { // current process was killed
+			processes_runScheduler(ctx);
+			return ctx->gpr[0];
+		} else {
+			return 0;
+		}
+	} else if (pid == 0 || pid == -1) {
+		printLine("   - pid = 0 / -1");
+		// TODO: proper process groups
+		if (!processes_sendKillToChildren(current->pid, sig, 0)) {
+			return -1;
+		}
+
+		processes_sendKill(current->pid, sig);
+		processes_runScheduler(ctx);
+		return ctx->gpr[0];
+	} else {
+		printLine("   - pid exact, pgroup");
+		// TODO: proper process groups
+		if (!processes_sendKillToChildren(current->pid, sig, -pid)) {
+			return -1;
+		} else if (current->pid == 0) { // current process was killed
+			processes_runScheduler(ctx);
+			return ctx->gpr[0];
+		} else {
+			return 0;
+		}
+		return -1;
+	}
+
 	return ctx->gpr[0];
 }
 
