@@ -1,4 +1,8 @@
-#include "P3.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "libc.h"
 
 int is_prime( uint32_t x ) {
   if ( !( x & 1 ) || ( x < 2 ) ) {

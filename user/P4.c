@@ -1,4 +1,8 @@
-#include "P4.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "libc.h"
 
 uint32_t gcd( uint32_t x, uint32_t y ) {
   if     ( x == y ) {

@@ -18,8 +18,12 @@ pcb_t *processes_get(size_t i) {
 	return &processes[i];
 }
 
-extern pcb_t *processes_getCurrent() {
+pcb_t *processes_getCurrent() {
 	return current;
+}
+
+void processes_setCurrent(pcb_t *v) {
+	current = v;
 }
 
 size_t processes_findByPID(pid_t pid) {
@@ -203,25 +207,31 @@ void processes_switchTo(ctx_t* ctx, int id)
 {
 	printf("=========== ");
 	printNum(processes[id].pid);
+	if (processes[id].blocked != NOT_BLOCKED) {
+		printf(" (BLOCKED)");
+	}
 	printf(" ===========\n");
 
 	if (current) {
-		memcpy(&current->ctx, ctx, sizeof(ctx_t));
+		if (processes[id].pid == current->pid) {
+			printLine("Already running process, no need to switch!");
+			return;
+		} else {
+			memcpy(&current->ctx, ctx, sizeof(ctx_t));
+		}
 	}
 	memcpy(ctx, &processes[id].ctx, sizeof(ctx_t));
 	current = &processes[id];
 	processes[id].time_since_last_ran = 0;
 
-	if (current->blocked != NOT_BLOCKED) {
-		printLine("############### SWITCHING TO BLOCKED PROCESS ###############");
-	}
+
 }
 
 
 //
 // PROCESS SCHEDULER
 //
-void processes_runScheduler(ctx_t* ctx)
+int processes_runScheduler(ctx_t* ctx)
 {
 	pid_t  next = scheduler_getNext();
 	size_t id   = processes_findByPID(next);
@@ -229,6 +239,10 @@ void processes_runScheduler(ctx_t* ctx)
 	if (id != SIZE_MAX) {
 		scheduler_add(next, processes[id].priority);
 		processes_switchTo(ctx, id);
+		return 1;
+	} else {
+		printLine("All processes are blocked. Unable to switch");
+		return 0;
 	}
 }
 

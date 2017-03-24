@@ -1,4 +1,8 @@
-#include "P5.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "libc.h"
 
 uint32_t weight( uint32_t x ) {
   x = ( x & 0x55555555 ) + ( ( x >>  1 ) & 0x55555555 );

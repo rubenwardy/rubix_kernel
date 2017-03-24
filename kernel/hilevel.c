@@ -7,12 +7,15 @@
 #include "utils.h"
 
 // We're using staticly linked programs
+extern void main_console();
 extern void main_P3();
 extern void main_P4();
 extern void main_P5();
 
 u32 getProgramInstAddress(const char *name) {
-	if (strcmp(name, "p3") == 0) {
+	if (strcmp(name, "console") == 0) {
+		return (u32)&main_console;
+	} else if (strcmp(name, "p3") == 0) {
 		return (u32)&main_P3;
 	} else if (strcmp(name, "p4") == 0) {
 		return (u32)&main_P4;
@@ -25,11 +28,29 @@ u32 getProgramInstAddress(const char *name) {
 	}
 }
 
+void postHandlerCheckForValidCurrentProcessOrWait(ctx_t *ctx) {
+	printLine("postHandlerCheckForValidCurrentProcessOrWait");
+
+	pcb_t *current = processes_getCurrent();
+	if (!current) {
+		if (processes_runScheduler(ctx)) {
+			return;
+		}
+	} else if (current->blocked == NOT_BLOCKED) {
+		return;
+	} else {
+		memcpy(&current->ctx, ctx, sizeof(ctx_t));
+		processes_setCurrent(NULL);
+	}
+
+	printLine("entering WFI mode...");
+	asm("WFI");
+}
+
 
 //
 // Initialise states
 //
-FiDes *fides_stdout;
 void hilevel_handler_rst(ctx_t *ctx) {
 	printLine("RESET");
 
@@ -38,9 +59,7 @@ void hilevel_handler_rst(ctx_t *ctx) {
 	blockedqueue_init();
 	fides_init();
 	fides_pipe_init();
-	processes_start(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p3"));
-	processes_start(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p4"));
-	processes_start(PRIORITY_NORMAL, 0x50, getProgramInstAddress("p5"));
+	processes_start(PRIORITY_NORMAL, 0x50, getProgramInstAddress("console"));
 
 	printLine(" - Setting current & ctx");
 
@@ -54,8 +73,12 @@ void hilevel_handler_rst(ctx_t *ctx) {
 	TIMER0->Timer1Ctrl |= 0x00000020; // enable          timer interrupt
 	TIMER0->Timer1Ctrl |= 0x00000080; // enable          timer
 
+	UART0->IMSC       |= 0x00000010; // enable UART    (Rx) interrupt
+	UART0->CR          = 0x00000301; // enable UART (Tx+Rx)
+
 	GICC0->PMR          = 0x000000F0; // unmask all            interrupts
 	GICD0->ISENABLER1  |= 0x00000010; // enable timer          interrupt
+	GICD0->ISENABLER1 |= 0x00001000; // enable UART    (Rx) interrupt
 	GICC0->CTLR         = 0x00000001; // enable GIC interface
 	GICD0->CTLR         = 0x00000001; // enable GIC distributor
 
@@ -82,17 +105,32 @@ void hilevel_handler_irq(ctx_t *ctx) {
 
 	// Step 4: handle the interrupt, then clear (or reset) the source.
 
-	if (id == GIC_SOURCE_TIMER0) {
-		PL011_putc(UART0, 'T', true);
+	switch (id) {
+	case GIC_SOURCE_TIMER0: {
+		printf(" timer\n");
 		TIMER0->Timer1IntClr = 0x01;
 		processes_runScheduler(ctx);
+		break;
 	}
+	case GIC_SOURCE_UART0: {
+		printf(" uart0\n");
+
+		u8 c = PL011_getc(UART0, true);
+		fides_terminal_input(c);
+
+		blockedqueue_checkForBlockedInReads();
+
+		UART0->ICR = 0x10;
+		break;
+	} }
 
 	// Step 5: write the interrupt identifier to signal we're done.
 
 	GICC0->EOIR = id;
 
 	printLine(" - done");
+
+	postHandlerCheckForValidCurrentProcessOrWait(ctx);
 }
 
 u32 svc_handle_write(ctx_t *ctx, pcb_t *current) {
@@ -195,7 +233,6 @@ void svc_handle_exit(ctx_t *ctx, pcb_t *current) {
 	}
 
 	processes_remove(current->pid);
-	processes_runScheduler(ctx);
 }
 
 u32 svc_handle_exec(ctx_t *ctx, pcb_t *current) {
@@ -391,6 +428,7 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 		printNum(id);
 		break;
 	}
-
 	printLine(" - done");
+
+	postHandlerCheckForValidCurrentProcessOrWait(ctx);
 }

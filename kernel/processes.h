@@ -55,6 +55,7 @@ typedef struct {
 extern void processes_init();
 extern pcb_t *processes_get(size_t i);
 extern pcb_t *processes_getCurrent();
+extern void processes_setCurrent(pcb_t *v);
 extern size_t processes_findByPID(pid_t pid);
 extern void processes_remove(pid_t pid);
 extern int processes_sendKill(pid_t pid, int sig);
@@ -65,7 +66,7 @@ extern void processes_deallocateStack(uint32_t stack_start);
 extern pid_t processes_start(u8 priority, u32 cpsr, u32 pc);
 extern pid_t processes_startByCtx(u8 priority, pid_t oldpid, ctx_t *ctx);
 extern void processes_switchTo(ctx_t* ctx, int id);
-extern void processes_runScheduler(ctx_t* ctx);
+extern int processes_runScheduler(ctx_t* ctx);
 extern void processes_unblockProcess(pcb_t *pcb);
 
 #endif
