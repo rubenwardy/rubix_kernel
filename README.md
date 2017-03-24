@@ -3,6 +3,27 @@
 Hedgehog logo © Laymik, licensed under CC-BY 3.0 US.
 https://thenounproject.com/term/hedgehog/582725/
 
+## Features
+
+* SYS Calls
+	* `yield` - ends the current time slice.
+	* `write` - writes to an open file descriptor.
+	* `read`  - reads from an file descriptor. Returns length of read, 0 on EOF. Blocking.
+	* `close` - closes a file descriptor.
+	* `dup2`  - duplicates fd from `old` to `new`. `new` is closed if it already exists.
+	* `pipe`  - creates a pipe. fd[0] is read, fd[1] is write.
+	* `fork`  - clones process. Return value is 0 if child, PID of child if parent, -1 if error.
+	* `exec`  - replaces the process with another program. PID is kept. Stack and FDs are destroyed.
+	* `exit`  - exits with exit code.
+	* `wait`  - waits for a child program to exit, and gives exit code.
+* Multi-processing
+	* **time slicing** - timer based timer slices.
+	* **priority-based** - priority(P) = priority_base(P) + slices_since_last_ran(P)
+	* **blocked queue** - for processes waiting for a process or file resource.
+* Objects
+	* `FiDes` - File descriptor. Interacted with using function pointers.
+	* `pipe`  - Pointed to by a FD.
+
 ## References
 
 All references access March 2017.
