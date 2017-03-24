@@ -20,11 +20,13 @@ BlockedProcess *getTail(BlockedProcess *head) {
 }
 
 BlockedProcess *getFree() {
-	int ptr = 0;
-	while (blockedProcesses[ptr].pid != 0) {
-		ptr++;
+	for (int ptr = 0; ptr < MAX_PROCESSES; ptr++) {
+		if (blockedProcesses[ptr].pid == 0) {
+			return &blockedProcesses[ptr];
+		}
 	}
-	return &blockedProcesses[ptr];
+	printError("[BlockedProcess::getFree] Unable to get free slot");
+	return NULL;
 }
 
 void blockedqueue_init() {
@@ -84,7 +86,7 @@ void blockedqueue_checkForBlockedPipes(u32 pipe_id) {
 					if (fides->data == pipe_id) {
 						size_t res = fides->read(fides, blocked->ret2, blocked->meta1);
 						if (res == SIZE_MAX) {
-							printLine("[c4bp] THIS SHOULD NEVER HAPPEN");
+							printError("[c4bp] THIS SHOULD NEVER HAPPEN");
 						} else {
 							printLine("[c4bp] unblocking process");
 							pcb_t *pcb = processes_get(processes_findByPID(blocked->pid));
@@ -98,7 +100,7 @@ void blockedqueue_checkForBlockedPipes(u32 pipe_id) {
 					printLine("[c4bp] Is not pipe fides");
 				}
 			} else {
-				printLine("[c4bp] Unable to find fides which is blocked :/");
+				printError("[c4bp] Unable to find fides which is blocked :/");
 			}
 		}
 	}
@@ -113,7 +115,7 @@ void blockedqueue_checkForBlockedInReads() {
 				if (fides_terminal_is_terminal(fides)) {
 					size_t res = fides->read(fides, blocked->ret2, blocked->meta1);
 					if (res == SIZE_MAX) {
-						printLine("[c4bi] THIS SHOULD NEVER HAPPEN");
+						printError("[c4bi] THIS SHOULD NEVER HAPPEN");
 					} else {
 						printLine("[c4bi] unblocking process");
 						pcb_t *pcb = processes_get(processes_findByPID(blocked->pid));
@@ -125,7 +127,7 @@ void blockedqueue_checkForBlockedInReads() {
 					printLine("[c4bi] Is not pipe fides");
 				}
 			} else {
-				printLine("[c4bi] Unable to find fides which is blocked :/");
+				printError("[c4bi] Unable to find fides which is blocked :/");
 			}
 		}
 	}

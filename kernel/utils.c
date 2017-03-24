@@ -11,7 +11,13 @@ void printf(const char *cs) {
 
 void printLine(const char *cs) {
 	printf(cs);
-	printf("\n\0");
+	printf("\n");
+}
+
+void printError(const char *cs) {
+	printf("\e[31m");
+	printf(cs);
+	printf("\e[0m\n");
 }
 
 void printNum2(int num) {

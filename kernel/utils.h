@@ -3,6 +3,7 @@
 
 extern void printf(const char *cs);
 extern void printLine(const char *cs);
+extern void printError(const char *cs);
 extern void printNum2(int num);
 extern void printNum(int num);
 

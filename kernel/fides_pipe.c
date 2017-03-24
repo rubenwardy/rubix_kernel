@@ -98,7 +98,7 @@ void fides_pipe_create(FiDes *one, FiDes *two) {
 	while (pipe_buffers[ptr].refs_read + pipe_buffers[ptr].refs_write > 0) {
 		ptr++;
 		if (ptr >= MAX_PIPES) {
-			printLine("Unable to create pipe, max reached!");
+			printError("Unable to create pipe, max reached!");
 			return;
 		}
 	}

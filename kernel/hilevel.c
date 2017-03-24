@@ -22,8 +22,8 @@ u32 getProgramInstAddress(const char *name) {
 	} else if (strcmp(name, "p5") == 0) {
 		return (u32)&main_P5;
 	} else {
-		printLine("Unable to find program");
-		printLine(name);
+		printError("Unable to find program");
+		printError(name);
 		return 0;
 	}
 }
@@ -52,7 +52,7 @@ void postHandlerCheckForValidCurrentProcessOrWait(ctx_t *ctx) {
 // Initialise states
 //
 void hilevel_handler_rst(ctx_t *ctx) {
-	printLine("RESET");
+	printError("RESET");
 
 	processes_init();
 	scheduler_init();
@@ -73,12 +73,12 @@ void hilevel_handler_rst(ctx_t *ctx) {
 	TIMER0->Timer1Ctrl |= 0x00000020; // enable          timer interrupt
 	TIMER0->Timer1Ctrl |= 0x00000080; // enable          timer
 
-	UART0->IMSC       |= 0x00000010; // enable UART    (Rx) interrupt
-	UART0->CR          = 0x00000301; // enable UART (Tx+Rx)
+	UART0->IMSC        |= 0x00000010; // enable UART    (Rx) interrupt
+	UART0->CR           = 0x00000301; // enable UART (Tx+Rx)
 
 	GICC0->PMR          = 0x000000F0; // unmask all            interrupts
 	GICD0->ISENABLER1  |= 0x00000010; // enable timer          interrupt
-	GICD0->ISENABLER1 |= 0x00001000; // enable UART    (Rx) interrupt
+	GICD0->ISENABLER1  |= 0x00001000; // enable UART    (Rx) interrupt
 	GICC0->CTLR         = 0x00000001; // enable GIC interface
 	GICD0->CTLR         = 0x00000001; // enable GIC distributor
 
@@ -154,10 +154,10 @@ u32 svc_handle_write(ctx_t *ctx, pcb_t *current) {
 		if (node->write) {
 			node->write(node, x, n);
 		} else {
-			printLine("Operation not permitted");
+			printError("Operation not permitted");
 		}
 	} else {
-		printLine("Unable to find fides to write to.");
+		printError("Unable to find fides to write to.");
 	}
 
 	return n;
@@ -185,11 +185,11 @@ u32 svc_handle_read(ctx_t *ctx, pcb_t *current) {
 				return res;
 			}
 		} else {
-			printLine("Operation not permitted");
+			printError("Operation not permitted");
 			return 0;
 		}
 	} else {
-		printLine("Unable to find fides to write to.");
+		printError("Unable to find fides to write to.");
 		return 0;
 	}
 }
@@ -228,7 +228,7 @@ void svc_handle_exit(ctx_t *ctx, pcb_t *current) {
 			proc->blocked = NOT_BLOCKED;
 			scheduler_add(proc->pid, proc->priority);
 		} else {
-			printLine("unable to find process.");
+			printError("unable to find process.");
 		}
 	}
 
@@ -326,6 +326,7 @@ u32 svc_handle_pipe(ctx_t *ctx, pcb_t *current) {
 
 		return 0;
 	} else {
+		printError("Unable to create pipe");
 		return -1;
 	}
 }
@@ -340,6 +341,7 @@ u32 svc_handle_close(ctx_t *ctx, pcb_t *current) {
 	if (fides_drop(current->pid, fd)) {
 		return 0;
 	} else {
+		printError("Unable to close file descriptor");
 		return -1;
 	}
 }
@@ -424,10 +426,11 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 		ctx->gpr[0] = svc_handle_kill(ctx, current);
 		break;
 	default:
-		printLine(" - unknown/unsupported");
+		printError(" - unknown/unsupported");
 		printNum(id);
 		break;
 	}
+
 	printLine(" - done");
 
 	postHandlerCheckForValidCurrentProcessOrWait(ctx);

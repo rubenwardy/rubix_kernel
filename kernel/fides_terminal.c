@@ -28,13 +28,21 @@ size_t fides_terminal_read(FiDes *node, char *x, size_t n) {
 size_t fides_terminal_write(FiDes *node, const char *x1, size_t n) {
 	char *x = (char*)x1;
 	for (int i = 0; i < n; i++) {
+		PL011_putc(UART1, *x++, true);
+	}
+}
+
+size_t fides_terminal_write_err(FiDes *node, const char *x1, size_t n) {
+	char *x = (char*)x1;
+	for (int i = 0; i < n; i++) {
 		PL011_putc(UART0, *x++, true);
 	}
 }
 
-void fides_terminal_create(FiDes *out, FiDes *in) {
+void fides_terminal_create(FiDes *in, FiDes *out, FiDes *err) {
 	in->read   = &fides_terminal_read;
 	out->write = &fides_terminal_write;
+	err->write = &fides_terminal_write_err;
 }
 
 void fides_terminal_input(char c) {

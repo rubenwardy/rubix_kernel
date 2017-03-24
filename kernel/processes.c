@@ -166,8 +166,9 @@ pid_t processes_start(u8 priority, u32 cpsr, u32 pc) {
 
 	FiDes *fd_in = fides_create(pid, 0);
 	FiDes *fd_out = fides_create(pid, 1);
-	processes[id].fid_counter = 2;
-	fides_terminal_create(fd_out, fd_in);
+	FiDes *fd_err = fides_create(pid, 2);
+	processes[id].fid_counter = 3;
+	fides_terminal_create(fd_in, fd_out, fd_err);
 
 	scheduler_add(pid, priority);
 

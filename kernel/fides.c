@@ -15,7 +15,7 @@ FiDes *fides_create(pid_t pid, u32 fid) {
 		ptr++;
 
 		if (ptr >= MAX_INODES) {
-			printLine("Maximum number of FiDes reached, returning 0!");
+			printError("Maximum number of FiDes reached, returning 0!");
 			return 0;
 		}
 	}
@@ -121,6 +121,6 @@ FiDes *fides_get(pid_t pid, u32 id) {
 		}
 	}
 
-	printLine("Failed to find fides");
+	printError("Failed to find fides");
 	return 0;
 }
