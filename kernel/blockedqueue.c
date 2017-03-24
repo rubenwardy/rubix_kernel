@@ -57,13 +57,6 @@ void blockedqueue_addFileRead(pid_t pid, u32 fid, char *x, int max) {
 	new->ret2   = x;
 	new->meta1  = max;
 	new->next   = 0;
-
-	BlockedProcess *head = getTail(head_process);
-	if (head) {
-		head->next = new;
-	} else {
-		head_process = new;
-	}
 }
 
 BlockedProcess *blockedqueue_popNextProcessExit(pid_t pid, pid_t parent) {
