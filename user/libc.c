@@ -143,6 +143,57 @@ int pipe(int fd[2]) {
       return r;
 }
 
+extern int popen( char *cmd, char mode ) {
+    if (mode != 'r' && mode != 'w') {
+        return NULL;
+    }
+
+    int fd[2];
+    if (pipe(fd) == -1) {
+        return NULL;
+    }
+
+    int res = fork();
+    if (res == -1) {
+        close(fd[0]);
+        close(fd[1]);
+        return NULL;
+    } else if (res == 0) {
+        // is child
+        if (mode == 'r') {
+            dup2(fd[1], STDOUT_FILENO);
+            close(fd[0]);
+            close(fd[1]);
+        } else {
+            dup2(fd[0], STDIN_FILENO);
+            close(fd[0]);
+            close(fd[1]);
+        }
+
+        exec(cmd);
+    } else {
+        // is parent
+        if (mode == 'r') {
+            return fd[0];
+        } else {
+            return fd[1];
+        }
+    }
+}
+
+int dup2(int old, int new) {
+      int r;
+      asm volatile( "mov r0, %2 \n" // assign r0 = pid
+                    "mov r1, %3 \n" // assign r0 = pid
+                    "svc %1     \n" // make system call SYS_DUP2
+                    "mov %0, r0 \n" // assign r  = r0
+                  : "=r" (r)
+                  : "I" (SYS_DUP2), "r" (old), "r" (new)
+                  : "r0" );
+
+      return r;
+}
+
 int close(int fd) {
       pid_t r;
       asm volatile( "mov r0, %2 \n" // assign r0 = pid
@@ -153,7 +204,6 @@ int close(int fd) {
                   : "r0" );
 
       return r;
-
 }
 
 int kill( int pid, int x ) {

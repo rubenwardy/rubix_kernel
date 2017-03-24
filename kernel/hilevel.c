@@ -109,6 +109,7 @@ void hilevel_handler_irq(ctx_t *ctx) {
 #define SYS_WAIT      ( 0x07 )
 #define SYS_PIPE      ( 0x08 )
 #define SYS_CLOSE     ( 0x09 )
+#define SYS_DUP2      ( 0x10 )
 void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 	printLine("SVC");
 
@@ -180,7 +181,7 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			}
 			break;
 		}
-		case SYS_FORK:
+		case SYS_FORK: {
 			printLine(" - fork");
 
 			size_t new_id = processes_findByPID(processes_startByCtx(current->priority, current->pid, ctx));
@@ -199,7 +200,8 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			}
 
 			break;
-		case SYS_EXIT:
+		}
+		case SYS_EXIT: {
 			printLine(" - exit");
 
 			// Check for processes that are wait*()-ing for exit code
@@ -221,7 +223,8 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			current = 0;
 			processes_runScheduler(ctx);
 			break;
-		case SYS_EXEC:
+		}
+		case SYS_EXEC: {
 			printLine(" - exec");
 
 			char *path = (char*) ctx->gpr[0];
@@ -242,7 +245,8 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			ctx->lr = 0;
 
 			break;
-		case SYS_WAIT:
+		}
+		case SYS_WAIT: {
 			printLine(" - wait");
 
 			pid_t pid   = (pid_t) ctx->gpr[0];
@@ -254,25 +258,25 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 			processes_runScheduler(ctx);
 
 			break;
-
-		case SYS_PIPE:
+		}
+		case SYS_PIPE: {
 			printLine(" - pipe");
 
 			FiDes *p_out = fides_create(current->pid, current->fid_counter++);
 			FiDes *p_in = fides_create(current->pid, current->fid_counter++);
 			if (p_out && p_in) {
-				fides_pipe_create(p_out, p_in);
+				fides_pipe_create(p_in, p_out);
 				int *fd  = (int*)ctx->gpr[0];
-				*(&fd[0]) = (int)p_out->id;
-				*(&fd[1]) = (int)p_in->id;
+				*(&fd[0]) = (int)p_in->id;
+				*(&fd[1]) = (int)p_out->id;
 				ctx->gpr[0] = 0;
 			} else {
 				ctx->gpr[0] = -1;
 			}
 
 			break;
-
-		case SYS_CLOSE:
+		}
+		case SYS_CLOSE: {
 			printf(" - close ");
 
 			int   fd = (int  )(ctx->gpr[0]);
@@ -285,7 +289,32 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 				ctx->gpr[0] = -1;
 			}
 			break;
+		}
+		case SYS_DUP2: {
+			printLine(" - dup2");
 
+			int old = (int)ctx->gpr[0];
+			int new = (int)ctx->gpr[1];
+
+			if (old == new) {
+				printLine("  - no need to duplicate FiDes of same ID");
+			} else {
+				FiDes *old_f = fides_get(current->pid, old);
+				if (old_f) {
+					FiDes *new_f = fides_get(current->pid, new);
+					if (new_f) {
+						fides_drop(current->pid, new);
+					}
+					fides_duplicateAlias(current->pid, old, new);
+
+					ctx->gpr[0] = new;
+				} else {
+					ctx->gpr[0] = -1;
+				}
+			}
+
+			break;
+		}
 		case SYS_KILL:
 			printLine(" - kill unimplemented");
 			break;

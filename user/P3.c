@@ -17,71 +17,86 @@ int is_prime( uint32_t x ) {
 extern void main_P4();
 
 void main_P3() {
-    int fd[2];
-    if (pipe(fd) == -1) {
-        write( STDOUT_FILENO, "perror", 5);
-        exit(1);
-        return;
-    }
 
-    int res = fork();
-    if (res == -1) {
-        write( STDOUT_FILENO, "error", 5);
-    } else if (res == 0) {
-        write( STDOUT_FILENO, "child", 5);
-        close(fd[0]);
-        write(fd[1], "hello", 5);
-        close(fd[1]);
+    int fd = popen("p4", 'r');
+
+    char buffer[100];
+    size_t size = read(fd, buffer, 100);
+    if (size == 0) {
+        write( STDOUT_FILENO, "eof", 3);
     } else {
-        write( STDOUT_FILENO, "parent", 6);
-
-        close(fd[1]);
-        char buffer[100];
-        size_t size = read(fd[0], buffer, 100);
-        if (size == 0) {
-            write( STDOUT_FILENO, "eof", 3);
-        } else {
-            write( STDOUT_FILENO, "remaining", 3);
-        }
-        close(fd[0]);
-        write(STDOUT_FILENO, buffer, size);
-
-        int code;;
-        int pid = wait(&code);
-        if (pid == res) {
-            write( STDOUT_FILENO, "cpid", 4);
-        } else {
-            write( STDOUT_FILENO, "wpid", 4);
-        }
-
-        if (code == 5) {
-            write( STDOUT_FILENO, "5", 1);
-        } else {
-            write( STDOUT_FILENO, "n5", 2);
-        }
-
-        exit(EXIT_SUCCESS);
-        return;
+        write( STDOUT_FILENO, "remaining", 3);
     }
-    write( STDOUT_FILENO, "P3", 2 );
+    close(fd);
+    write(STDOUT_FILENO, buffer, size);
 
-  // int res = exec("p4");
-  // if (res == -1) {
-  //     write( STDOUT_FILENO, "err", 3 );
-  // } else {
-  //     write( STDOUT_FILENO, "oth", 3 );
+    exit(EXIT_SUCCESS);
+  //
+  //   int fd[2];
+  //   if (pipe(fd) == -1) {
+  //       write( STDOUT_FILENO, "perror", 5);
+  //       exit(1);
+  //       return;
+  //   }
+  //
+  //   int res = fork();
+  //   if (res == -1) {
+  //       write( STDOUT_FILENO, "error", 5);
+  //   } else if (res == 0) {
+  //       write( STDOUT_FILENO, "child", 5);
+  //       close(fd[0]);
+  //       write(fd[1], "hello", 5);
+  //       close(fd[1]);
+  //   } else {
+  //       write( STDOUT_FILENO, "parent", 6);
+  //
+  //       close(fd[1]);
+  //       char buffer[100];
+  //       size_t size = read(fd[0], buffer, 100);
+  //       if (size == 0) {
+  //           write( STDOUT_FILENO, "eof", 3);
+  //       } else {
+  //           write( STDOUT_FILENO, "remaining", 3);
+  //       }
+  //       close(fd[0]);
+  //       write(STDOUT_FILENO, buffer, size);
+  //
+  //       int code;
+  //       int pid = wait(&code);
+  //       if (pid == res) {
+  //           write( STDOUT_FILENO, "cpid", 4);
+  //       } else {
+  //           write( STDOUT_FILENO, "wpid", 4);
+  //       }
+  //
+  //       if (code == 5) {
+  //           write( STDOUT_FILENO, "5", 1);
+  //       } else {
+  //           write( STDOUT_FILENO, "n5", 2);
+  //       }
+  //
+  //       exit(EXIT_SUCCESS);
+  //       return;
+  //   }
+  //   write( STDOUT_FILENO, "P3", 2 );
+  //
+  // // int res = exec("p4");
+  // // if (res == -1) {
+  // //     write( STDOUT_FILENO, "err", 3 );
+  // // } else {
+  // //     write( STDOUT_FILENO, "oth", 3 );
+  // // }
+  //
+  // for( int i = 0; i < 50; i++ ) {
+  //   write( STDOUT_FILENO, "P3", 2 );
+  //
+  //   uint32_t lo = 1 <<  8;
+  //   uint32_t hi = 1 << 16;
+  //
+  //   for( uint32_t x = lo; x < hi; x++ ) {
+  //     int r = is_prime( x );
+  //   }
   // }
-
-  for( int i = 0; i < 50; i++ ) {
-    write( STDOUT_FILENO, "P3", 2 );
-
-    uint32_t lo = 1 <<  8;
-    uint32_t hi = 1 << 16;
-
-    for( uint32_t x = lo; x < hi; x++ ) {
-      int r = is_prime( x );
-    }
-  }
-
-  exit( 5 );
+  //
+  // exit( 5 );
 }

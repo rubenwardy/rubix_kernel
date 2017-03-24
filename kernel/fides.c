@@ -44,6 +44,19 @@ void fides_duplicate(pid_t pid, FiDes *old) {
 	}
 }
 
+void fides_duplicateAlias(pid_t pid, u32 old, u32 new) {
+	FiDes *fides = fides_get(pid, old);
+	FiDes *fides_new = fides_create(pid, new);
+	fides_new->data  = fides->data;
+	fides_new->write = fides->write;
+	fides_new->read  = fides->read;
+	fides_new->grab  = fides->grab;
+	fides_new->drop  = fides->drop;
+	if (fides_new->grab) {
+		fides_new->grab(fides_new);
+	}
+}
+
 size_t fides_duplicate_all(pid_t oldpid, pid_t pid) {
 	size_t num_created = 0;
 
