@@ -95,6 +95,202 @@ void hilevel_handler_irq(ctx_t *ctx) {
 	printLine(" - done");
 }
 
+u32 svc_handle_write(ctx_t *ctx, pcb_t *current) {
+	printf(" - write ");
+
+	int   fd = (int  )(ctx->gpr[0]);
+	char*  x = (char*)(ctx->gpr[1]);
+	int    n = (int  )(ctx->gpr[2]);
+	printNum(fd);
+	printf(" size ");
+	printNum(n);
+	printf(": ");
+	char *x1 = x;
+	for (int i = 0; i < n; i++) {
+		PL011_putc(UART0, *x1++, true);
+	}
+	printf("\n");
+
+	FiDes *node = fides_get(current->pid, fd);
+	if (node) {
+		if (node->write) {
+			node->write(node, x, n);
+		} else {
+			printLine("Operation not permitted");
+		}
+	} else {
+		printLine("Unable to find fides to write to.");
+	}
+
+	return n;
+}
+
+u32 svc_handle_read(ctx_t *ctx, pcb_t *current) {
+	printLine(" - read");
+
+	int   fd = (int  )(ctx->gpr[0]);
+	char*  x = (char*)(ctx->gpr[1]);
+	int    n = (int  )(ctx->gpr[2]);
+
+	FiDes *node = fides_get(current->pid, fd );
+	if (node) {
+		if (node->read) {
+			size_t res = node->read(node, x, n);
+			if (res == SIZE_MAX) {
+				printLine(" - blocked");
+				scheduler_remove(current->pid);
+				current->blocked = BLOCKED_FILE;
+				blockedqueue_addFileRead(current->pid, fd, x, n);
+				processes_runScheduler(ctx);
+				return ctx->gpr[0];
+			} else {
+				return res;
+			}
+		} else {
+			printLine("Operation not permitted");
+			return 0;
+		}
+	} else {
+		printLine("Unable to find fides to write to.");
+		return 0;
+	}
+}
+
+u32 svc_handle_fork(ctx_t *ctx, pcb_t *current) {
+	printLine(" - fork");
+
+	size_t new_id = processes_findByPID(processes_startByCtx(current->priority, current->pid, ctx));
+	if (new_id == SIZE_MAX) {
+		return -1;
+	}
+
+	pcb_t *new = processes_get(new_id);
+
+	u32 offset = current->stack_start - ctx->sp;
+	new->stack_start = processes_allocateStack(new->pid);
+	new->ctx.sp = new->stack_start - offset;
+	memcpy((u32*)new->ctx.sp, (u32*)ctx->sp, offset);
+	new->ctx.gpr[0] = 0;
+	new->parent = current->pid;
+
+	return new->pid;
+}
+
+void svc_handle_exit(ctx_t *ctx, pcb_t *current) {
+	printLine(" - exit");
+
+	// Check for processes that are wait*()-ing for exit code
+	BlockedProcess *bl = blockedqueue_popNextProcessExit(current->pid, current->parent);
+	if (bl) {
+		size_t id = processes_findByPID(bl->pid);
+		if (id < SIZE_MAX) {
+			pcb_t *proc = processes_get(id);
+			proc->ctx.gpr[0] = current->pid;
+			*bl->ret1 = (int)ctx->gpr[0];
+			proc->blocked = NOT_BLOCKED;
+			scheduler_add(proc->pid, proc->priority);
+		} else {
+			printLine("unable to find process.");
+		}
+	}
+
+	processes_remove(current->pid);
+	processes_runScheduler(ctx);
+}
+
+u32 svc_handle_exec(ctx_t *ctx, pcb_t *current) {
+	printLine(" - exec");
+
+	char *path = (char*) ctx->gpr[0];
+	u32 addr = getProgramInstAddress(path);
+	if (addr == 0) {
+		return -1;
+	}
+
+	processes_deallocateStack(current->stack_start);
+	current->stack_start = processes_allocateStack(current->pid);
+	ctx->cpsr = 0x50;
+	ctx->pc = addr;
+	for (int i = 0; i < 13; i++) {
+		ctx->gpr[i] = 0;
+	}
+	ctx->sp = current->stack_start;
+	ctx->lr = 0;
+	return 0;
+}
+
+u32 svc_handle_kill(ctx_t *ctx, pcb_t *current) {
+	printLine(" - kill unimplemented");
+	return ctx->gpr[0];
+}
+
+void svc_handle_wait(ctx_t *ctx, pcb_t *current) {
+	printLine(" - wait");
+
+	pid_t pid   = (pid_t) ctx->gpr[0];
+	int *status = (int*)  ctx->gpr[1];
+
+	scheduler_remove(current->pid);
+	current->blocked = BLOCKED_PROCESS;
+	blockedqueue_addProcessExit(current->pid, pid, status);
+	processes_runScheduler(ctx);
+}
+
+u32 svc_handle_pipe(ctx_t *ctx, pcb_t *current) {
+	printLine(" - pipe");
+
+	FiDes *p_out = fides_create(current->pid, current->fid_counter++);
+	FiDes *p_in = fides_create(current->pid, current->fid_counter++);
+	if (p_out && p_in) {
+		fides_pipe_create(p_in, p_out);
+		int *fd  = (int*)ctx->gpr[0];
+		*(&fd[0]) = (int)p_in->id;
+		*(&fd[1]) = (int)p_out->id;
+
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
+u32 svc_handle_close(ctx_t *ctx, pcb_t *current) {
+	printLine(" - close ");
+
+	int   fd = (int  )(ctx->gpr[0]);
+	printNum(fd);
+	printf("\n");
+
+	if (fides_drop(current->pid, fd)) {
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
+u32 svc_handle_dup2(ctx_t *ctx, pcb_t *current) {
+	printLine(" - dup2");
+
+	int old = (int)ctx->gpr[0];
+	int new = (int)ctx->gpr[1];
+
+	if (old == new) {
+		printLine("  - no need to duplicate FiDes of same ID");
+		return new;
+	}
+
+	FiDes *old_f = fides_get(current->pid, old);
+	if (!old_f) {
+		return -1;
+	}
+
+	FiDes *new_f = fides_get(current->pid, new);
+	if (new_f) {
+		fides_drop(current->pid, new);
+	}
+	fides_duplicateAlias(current->pid, old, new);
+
+	return new;
+}
 
 //
 // Handle system calls
@@ -116,213 +312,44 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 	pcb_t *current = processes_getCurrent();
 
 	switch (id) {
-		case SYS_YIELD: {
-			printLine(" - scheduler");
-			processes_runScheduler(ctx);
-			break;
-		}
-		case SYS_WRITE: {
-			printf(" - write ");
-
-			int   fd = (int  )(ctx->gpr[0]);
-			char*  x = (char*)(ctx->gpr[1]);
-			int    n = (int  )(ctx->gpr[2]);
-			printNum(fd);
-			printf(" size ");
-			printNum(n);
-			printf(": ");
-			char *x1 = x;
-			for (int i = 0; i < n; i++) {
-				PL011_putc(UART0, *x1++, true);
-			}
-			printf("\n");
-
-			FiDes *node = fides_get(current->pid, fd);
-			if (node) {
-				if (node->write) {
-					node->write(node, x, n);
-				} else {
-					printLine("Operation not permitted");
-				}
-			} else {
-				printLine("Unable to find fides to write to.");
-			}
-
-			ctx->gpr[ 0 ] = n;
-			break;
-		}
-		case SYS_READ: {
-			printLine(" - read");
-
-			int   fd = (int  )(ctx->gpr[0]);
-			char*  x = (char*)(ctx->gpr[1]);
-			int    n = (int  )(ctx->gpr[2]);
-
-			FiDes *node = fides_get(current->pid, fd );
-			if (node) {
-				if (node->read) {
-					size_t res = node->read(node, x, n);
-					if (res == SIZE_MAX) {
-						printLine(" - blocked");
-						scheduler_remove(current->pid);
-						current->blocked = BLOCKED_FILE;
-						blockedqueue_addFileRead(current->pid, fd, x, n);
-						processes_runScheduler(ctx);
-					} else {
-						ctx->gpr[0] = res;
-					}
-				} else {
-					printLine("Operation not permitted");
-					ctx->gpr[0] = 0;
-				}
-			} else {
-				printLine("Unable to find fides to write to.");
-				ctx->gpr[0] = 0;
-			}
-			break;
-		}
-		case SYS_FORK: {
-			printLine(" - fork");
-
-			size_t new_id = processes_findByPID(processes_startByCtx(current->priority, current->pid, ctx));
-			if (new_id != SIZE_MAX) {
-				pcb_t *new = processes_get(new_id);
-				ctx->gpr[0] = new->pid;
-
-				u32 offset = current->stack_start - ctx->sp;
-				new->stack_start = processes_allocateStack(new->pid);
-				new->ctx.sp = new->stack_start - offset;
-				memcpy((u32*)new->ctx.sp, (u32*)ctx->sp, offset);
-				new->ctx.gpr[0] = 0;
-				new->parent = current->pid;
-			} else {
-				ctx->gpr[0] = -1;
-			}
-
-			break;
-		}
-		case SYS_EXIT: {
-			printLine(" - exit");
-
-			// Check for processes that are wait*()-ing for exit code
-			BlockedProcess *bl = blockedqueue_popNextProcessExit(current->pid, current->parent);
-			if (bl) {
-				size_t id = processes_findByPID(bl->pid);
-				if (id < SIZE_MAX) {
-					pcb_t *proc = processes_get(id);
-					proc->ctx.gpr[0] = current->pid;
-					*bl->ret1 = (int)ctx->gpr[0];
-					proc->blocked = NOT_BLOCKED;
-					scheduler_add(proc->pid, proc->priority);
-				} else {
-					printLine("unable to find process.");
-				}
-			}
-
-			processes_remove(current->pid);
-			current = 0;
-			processes_runScheduler(ctx);
-			break;
-		}
-		case SYS_EXEC: {
-			printLine(" - exec");
-
-			char *path = (char*) ctx->gpr[0];
-			u32 addr = getProgramInstAddress(path);
-			if (addr == 0) {
-				ctx->gpr[0] = -1;
-				return;
-			}
-
-			processes_deallocateStack(current->stack_start);
-			current->stack_start = processes_allocateStack(current->pid);
-			ctx->cpsr = 0x50;
-			ctx->pc = addr;
-			for (int i = 0; i < 13; i++) {
-				ctx->gpr[i] = 0;
-			}
-			ctx->sp = current->stack_start;
-			ctx->lr = 0;
-
-			break;
-		}
-		case SYS_WAIT: {
-			printLine(" - wait");
-
-			pid_t pid   = (pid_t) ctx->gpr[0];
-			int *status = (int*)  ctx->gpr[1];
-
-			scheduler_remove(current->pid);
-			current->blocked = BLOCKED_PROCESS;
-			blockedqueue_addProcessExit(current->pid, pid, status);
-			processes_runScheduler(ctx);
-
-			break;
-		}
-		case SYS_PIPE: {
-			printLine(" - pipe");
-
-			FiDes *p_out = fides_create(current->pid, current->fid_counter++);
-			FiDes *p_in = fides_create(current->pid, current->fid_counter++);
-			if (p_out && p_in) {
-				fides_pipe_create(p_in, p_out);
-				int *fd  = (int*)ctx->gpr[0];
-				*(&fd[0]) = (int)p_in->id;
-				*(&fd[1]) = (int)p_out->id;
-				ctx->gpr[0] = 0;
-			} else {
-				ctx->gpr[0] = -1;
-			}
-
-			break;
-		}
-		case SYS_CLOSE: {
-			printf(" - close ");
-
-			int   fd = (int  )(ctx->gpr[0]);
-			printNum(fd);
-			printf("\n");
-
-			if (fides_drop(current->pid, fd)) {
-				ctx->gpr[0] = 0;
-			} else {
-				ctx->gpr[0] = -1;
-			}
-			break;
-		}
-		case SYS_DUP2: {
-			printLine(" - dup2");
-
-			int old = (int)ctx->gpr[0];
-			int new = (int)ctx->gpr[1];
-
-			if (old == new) {
-				printLine("  - no need to duplicate FiDes of same ID");
-			} else {
-				FiDes *old_f = fides_get(current->pid, old);
-				if (old_f) {
-					FiDes *new_f = fides_get(current->pid, new);
-					if (new_f) {
-						fides_drop(current->pid, new);
-					}
-					fides_duplicateAlias(current->pid, old, new);
-
-					ctx->gpr[0] = new;
-				} else {
-					ctx->gpr[0] = -1;
-				}
-			}
-
-			break;
-		}
-		case SYS_KILL:
-			printLine(" - kill unimplemented");
-			break;
-		default: {
-			printLine(" - unknown/unsupported");
-			printNum(id);
-			break;
-		}
+	case SYS_YIELD:
+		printLine(" - scheduler");
+		processes_runScheduler(ctx);
+		break;
+	case SYS_WRITE:
+		ctx->gpr[0] = svc_handle_write(ctx, current);
+		break;
+	case SYS_READ:
+		ctx->gpr[0] = svc_handle_read(ctx, current);
+		break;
+	case SYS_FORK:
+		ctx->gpr[0] = svc_handle_fork(ctx, current);
+		break;
+	case SYS_EXIT:
+		svc_handle_exit(ctx, current);
+		break;
+	case SYS_EXEC:
+		ctx->gpr[0] = svc_handle_exec(ctx, current);
+		break;
+	case SYS_WAIT:
+		svc_handle_wait(ctx, current);
+		break;
+	case SYS_PIPE:
+		ctx->gpr[0] = svc_handle_pipe(ctx, current);
+		break;
+	case SYS_CLOSE:
+		ctx->gpr[0] = svc_handle_close(ctx, current);
+		break;
+	case SYS_DUP2:
+		ctx->gpr[0] = svc_handle_dup2(ctx, current);
+		break;
+	case SYS_KILL:
+		ctx->gpr[0] = svc_handle_kill(ctx, current);
+		break;
+	default:
+		printLine(" - unknown/unsupported");
+		printNum(id);
+		break;
 	}
 
 	printLine(" - done");
