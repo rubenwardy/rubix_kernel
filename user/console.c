@@ -1,14 +1,5 @@
 #include "console.h"
-
-/* The following functions are special-case versions of a) writing,
-* and b) reading a string from the UART (the latter case returning
-* once a carriage return character has been read, or an overall
-* limit reached).
-*/
-
-void puts(char* x) {
-	write(STDOUT_FILENO, x, strlen(x));
-}
+#include "stdio.h"
 
 int gets(char* x, int n) {
 	int i = 0;
@@ -16,9 +7,12 @@ int gets(char* x, int n) {
 		int amt_read = read(STDIN_FILENO, &x[i], n - i);
 		i += amt_read;
 		if (amt_read == 0 || x[i - 1] == '\r') {
-			x[i] = '\0';
+			x[i - 1] = '\0';
 			break;
 		}
+
+		// TODO: allow UART0 input so I don't have to print this
+		write(STDOUT_FILENO, &x[i - amt_read], amt_read);
 	}
 	return i;
 }
@@ -33,15 +27,14 @@ int gets(char* x, int n) {
 
 void main_console() {
 	char x[1024];
-
-	puts("#### CONSOLE ####\n");
+	printf("\n");
 
 	while (1) {
-		puts("shell$ ");
+		printf("user1@pc $ ");
 		int n = gets(x, 1024);
 		x[n] = '\0';
 
-		puts(x);
+		printf("\n");
 
 		char *p = strtok(x, " ");
 
@@ -58,7 +51,7 @@ void main_console() {
 
 			kill( pid, s );
 		} else {
-			puts("unknown command\n");
+			printf("%s: command not found\n", x);
 		}
 	}
 
