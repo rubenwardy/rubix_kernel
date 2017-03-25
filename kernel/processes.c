@@ -44,20 +44,20 @@ void processes_remove(pid_t pid) {
 		printLine("Can't remove process if it doesn't exist!");
 	}
 
-	printf("Found pid at ");
+	kprint("Found pid at ");
 	printNum(ptr);
-	printf("\n");
-	printf("Setting to 0: ");
+	kprint("\n");
+	kprint("Setting to 0: ");
 	printNum(ptr);
-	printf("\n");
+	kprint("\n");
 	processes[ptr].pid = 0;
 
 	while (ptr + 1 < MAX_PROCESSES && processes[ptr + 1].pid != 0) {
-		printf("Switching ");
+		kprint("Switching ");
 		printNum(ptr);
-		printf(" and ");
+		kprint(" and ");
 		printNum(ptr + 1);
-		printf("\n");
+		kprint("\n");
 
 		memcpy(&processes[ptr], &processes[ptr + 1], sizeof(pcb_t));
 		ptr++;
@@ -121,11 +121,11 @@ u32 processes_allocateStack(pid_t pid) {
 
 	pages[ptr].pid = pid;
 
-	printf("Allocated page ");
+	kprint("Allocated page ");
 	printNum(ptr);
-	printf(" to pid=");
+	kprint(" to pid=");
 	printNum(pid);
-	printf("\n");
+	kprint("\n");
 
 	return (u32)&tos_UserSpace - ptr * PAGE_SIZE;
 }
@@ -147,11 +147,11 @@ pid_t processes_start(u8 priority, u32 cpsr, u32 pc) {
 		return 0;
 	}
 
-	printf("Starting process pid=");
+	kprint("Starting process pid=");
 	printNum(pid);
-	printf(" at pcb=");
+	kprint(" at pcb=");
 	printNum(id);
-	printf("\n");
+	kprint("\n");
 
 	u32 sp = processes_allocateStack(pid);
 
@@ -184,11 +184,11 @@ pid_t processes_startByCtx(u8 priority, pid_t oldpid, ctx_t *ctx) {
 		return 0;
 	}
 
-	printf("Starting process pid=");
+	kprint("Starting process pid=");
 	printNum(pid);
-	printf(" at pcb=");
+	kprint(" at pcb=");
 	printNum(id);
-	printf("\n");
+	kprint("\n");
 
 	memset(&processes[id], 0, sizeof(pcb_t));
 	processes[id].pid      = pid;
@@ -206,12 +206,12 @@ pid_t processes_startByCtx(u8 priority, pid_t oldpid, ctx_t *ctx) {
 
 void processes_switchTo(ctx_t* ctx, int id)
 {
-	printf("=========== ");
+	kprint("=========== ");
 	printNum(processes[id].pid);
 	if (processes[id].blocked != NOT_BLOCKED) {
-		printf(" (BLOCKED)");
+		kprint(" (BLOCKED)");
 	}
-	printf(" ===========\n");
+	kprint(" ===========\n");
 
 	if (current) {
 		if (processes[id].pid == current->pid) {

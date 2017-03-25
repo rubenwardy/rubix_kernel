@@ -30,15 +30,15 @@ size_t fides_pipe_read (FiDes *node, char *data, size_t max) {
 	}
 	memcpy(&data[0], &pipe->buffer[0], sizeof(char) * to_read);
 
-	printf("[pipe] Reading from buffer ");
+	kprint("[pipe] Reading from buffer ");
 	printNum(node->data);
-	printf(" size=");
+	kprint(" size=");
 	printNum(to_read);
-	printf(" max-read=");
+	kprint(" max-read=");
 	printNum(max);
-	printf(" buf-size=");
+	kprint(" buf-size=");
 	printNum(pipe->buffer_size);
-	printf("\n");
+	kprint("\n");
 
 	if (pipe->buffer_size > to_read) {
 		memcpy(&pipe->buffer[0], &pipe->buffer[to_read], sizeof(char) * (pipe->buffer_size - to_read));

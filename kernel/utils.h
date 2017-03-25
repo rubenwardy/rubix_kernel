@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-extern void printf(const char *cs);
+extern void kprint(const char *cs);
 extern void printLine(const char *cs);
 extern void printError(const char *cs);
 extern void printNum2(int num);

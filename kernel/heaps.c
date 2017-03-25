@@ -71,7 +71,7 @@ bool heaps_remove(MaxHeap *x, pid_t pid) {
 				maxHeapify(x, i);
 			}
 			printNum(x->num_items);
-			printf("\n");
+			kprint("\n");
 			return true;
 		}
 	}
@@ -101,9 +101,9 @@ void heaps_increaseAll(MaxHeap *x, int v) {
 void heaps_print(MaxHeap *x) {
 	for (int i = 0; i < x->num_items; i++) {
 		printNum(x->items[i].pid);
-		printf("(");
+		kprint("(");
 		printNum(x->items[i].weight);
-		printf(") ");
+		kprint(") ");
 	}
-	printf("\n");
+	kprint("\n");
 }

@@ -23,11 +23,11 @@ FiDes *fides_create(pid_t pid, u32 fid) {
 	fidess[ptr].pid  = pid;
 	fidess[ptr].id   = fid;
 
-	printf("Created fides id=");
+	kprint("Created fides id=");
 	printNum(fidess[ptr].id);
-	printf(" for process pid=");
+	kprint(" for process pid=");
 	printNum(pid);
-	printf("\n");
+	kprint("\n");
 
 	return &fidess[ptr];
 }
@@ -88,9 +88,9 @@ int fides_drop(pid_t pid, u32 fid) {
 void fides_dropall(pid_t pid) {
 	for (int i = 0; i < MAX_INODES; i++) {
 		if (fidess[i].pid == pid) {
-			printf("[Fides] Dropping open fd, id=");
+			kprint("[Fides] Dropping open fd, id=");
 			printNum(fidess[i].id);
-			printf("\n");
+			kprint("\n");
 			if (fidess[i].drop) {
 				fidess[i].drop(&fidess[i]);
 			}
@@ -103,9 +103,9 @@ void fides_dropallOnExec(pid_t pid) {
 	for (int i = 0; i < MAX_INODES; i++) {
 		// TODO: add close_on_exec flag
 		if (fidess[i].pid == pid && fidess[i].id > 2) {
-			printf("[Fides] Dropping open fd on exec, id=");
+			kprint("[Fides] Dropping open fd on exec, id=");
 			printNum(fidess[i].id);
-			printf("\n");
+			kprint("\n");
 			if (fidess[i].drop) {
 				fidess[i].drop(&fidess[i]);
 			}

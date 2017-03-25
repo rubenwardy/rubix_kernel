@@ -1,7 +1,7 @@
 #include "utils.h"
 #include "PL011.h"
 
-void printf(const char *cs) {
+void kprint(const char *cs) {
 	size_t ptr = 0;
 	while (cs[ptr] != '\0') {
 		PL011_putc(UART0, cs[ptr], true);
@@ -10,14 +10,14 @@ void printf(const char *cs) {
 }
 
 void printLine(const char *cs) {
-	printf(cs);
-	printf("\n");
+	kprint(cs);
+	kprint("\n");
 }
 
 void printError(const char *cs) {
-	printf("\e[31m");
-	printf(cs);
-	printf("\e[0m\n");
+	kprint("\e[31m");
+	kprint(cs);
+	kprint("\e[0m\n");
 }
 
 void printNum2(int num) {

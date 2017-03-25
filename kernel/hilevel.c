@@ -107,13 +107,13 @@ void hilevel_handler_irq(ctx_t *ctx) {
 
 	switch (id) {
 	case GIC_SOURCE_TIMER0: {
-		printf(" timer\n");
+		kprint(" timer\n");
 		TIMER0->Timer1IntClr = 0x01;
 		processes_runScheduler(ctx);
 		break;
 	}
 	case GIC_SOURCE_UART0: {
-		printf(" uart0\n");
+		kprint(" uart0\n");
 
 		u8 c = PL011_getc(UART0, true);
 		fides_terminal_input(c);
@@ -134,20 +134,20 @@ void hilevel_handler_irq(ctx_t *ctx) {
 }
 
 u32 svc_handle_write(ctx_t *ctx, pcb_t *current) {
-	printf(" - write ");
+	kprint(" - write ");
 
 	int   fd = (int  )(ctx->gpr[0]);
 	char*  x = (char*)(ctx->gpr[1]);
 	int    n = (int  )(ctx->gpr[2]);
 	printNum(fd);
-	printf(" size ");
+	kprint(" size ");
 	printNum(n);
-	printf(": ");
-	char *x1 = x;
-	for (int i = 0; i < n; i++) {
+	kprint(": ");
+	const char *x1 = x;
+	for (int i = 0; i < n && *x1 != '\n'; i++) {
 		PL011_putc(UART0, *x1++, true);
 	}
-	printf("\n");
+	kprint("\n");
 
 	FiDes *node = fides_get(current->pid, fd);
 	if (node) {
@@ -336,7 +336,7 @@ u32 svc_handle_close(ctx_t *ctx, pcb_t *current) {
 
 	int   fd = (int  )(ctx->gpr[0]);
 	printNum(fd);
-	printf("\n");
+	kprint("\n");
 
 	if (fides_drop(current->pid, fd)) {
 		return 0;
