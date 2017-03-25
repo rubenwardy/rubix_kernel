@@ -31,12 +31,22 @@ u32 getProgramInstAddress(const char *name) {
 void postHandlerCheckForValidCurrentProcessOrWait(ctx_t *ctx) {
 	printLine("postHandlerCheckForValidCurrentProcessOrWait");
 
+	if (ctx && ctx->pc < 0x1000) {
+		printError(" - Invalid PC detected!");
+	}
+
 	pcb_t *current = processes_getCurrent();
 	if (!current) {
 		if (processes_runScheduler(ctx)) {
+			if (ctx && ctx->pc < 0x1000) {
+				printError(" - Invalid PC detected!");
+			}
 			return;
 		}
 	} else if (current->blocked == NOT_BLOCKED) {
+		if (ctx && ctx->pc < 0x1000) {
+			printError(" - Invalid PC detected!");
+		}
 		return;
 	} else {
 		memcpy(&current->ctx, ctx, sizeof(ctx_t));
@@ -148,6 +158,11 @@ u32 svc_handle_write(ctx_t *ctx, pcb_t *current) {
 		PL011_putc(UART0, *x1++, true);
 	}
 	kprint("\n");
+
+	if (n == 0 || n > 2048) {
+		printError("Length is 0, or too large");
+		return -1;
+	}
 
 	FiDes *node = fides_get(current->pid, fd);
 	if (node) {

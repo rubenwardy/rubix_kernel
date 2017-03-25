@@ -22,7 +22,7 @@
 %.o   : %.s
 	@${LINARO_PATH}/bin/${LINARO_PREFIX}-as  $(addprefix -I , ${PROJECT_PATH} ${LINARO_PATH}/arm-eabi/libc/usr/include) -mcpu=cortex-a8                                       -g       -o ${@} ${<}
 %.o   : %.c
-	@${LINARO_PATH}/bin/${LINARO_PREFIX}-gcc $(addprefix -I , ${PROJECT_PATH} ${LINARO_PATH}/arm-eabi/libc/usr/include) -mcpu=cortex-a8 -mabi=aapcs -ffreestanding -std=gnu99 -g -c -O -o ${@} ${<}
+	@${LINARO_PATH}/bin/${LINARO_PREFIX}-gcc $(addprefix -I , ${PROJECT_PATH} ${LINARO_PATH}/arm-eabi/libc/usr/include) -mcpu=cortex-a8 -mabi=aapcs -ffreestanding -std=gnu99 -g -c -O0 -o ${@} ${<}
 
 %.elf : ${PROJECT_OBJECTS}
 	@${LINARO_PATH}/bin/${LINARO_PREFIX}-ld  $(addprefix -L ,                 ${LINARO_PATH}/arm-eabi/libc/usr/lib    ) -T ${*}.ld -o ${@} ${^} -lc -lgcc

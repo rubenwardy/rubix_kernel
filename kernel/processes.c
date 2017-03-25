@@ -45,6 +45,11 @@ void processes_remove(pid_t pid) {
 		return;
 	}
 
+	if (pid == 1) {
+		printError("Attempt to remove pid=1");
+		while(1) {}
+	}
+
 	kprint("Found pid at ");
 	printNum(ptr);
 	kprint("\n");
@@ -225,8 +230,6 @@ void processes_switchTo(ctx_t* ctx, int id)
 	memcpy(ctx, &processes[id].ctx, sizeof(ctx_t));
 	current = &processes[id];
 	processes[id].time_since_last_ran = 0;
-
-
 }
 
 

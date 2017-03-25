@@ -26,11 +26,11 @@ int gets(char* x, int n) {
 */
 
 void main_console() {
-	char x[1024];
 	printf("\n");
 
 	while (1) {
 		printf("user1@pc $ ");
+		char x[1024];
 		int n = gets(x, 1024);
 		x[n] = '\0';
 
@@ -39,11 +39,14 @@ void main_console() {
 		char *p = strtok(x, " ");
 
 		if (strcmp(p, "fork") == 0) {
-			pid_t pid = fork();
-
+			int pid = fork();
 			if (pid == 0) {
-				const char *addr = "p4";
-				exec((char*)addr);
+				const char *cmd_name = strtok(NULL, " ");
+				if (exec((char*)cmd_name) == -1) {
+					exit(1);
+				}
+			} else if (pid == -1) {
+				printf("Unable to fork to start process\n");
 			}
 		} else if (strcmp(p, "kill") == 0) {
 			pid_t pid = atoi(strtok(NULL, " "));
@@ -51,7 +54,22 @@ void main_console() {
 
 			kill( pid, s );
 		} else {
-			printf("%s: command not found\n", x);
+			int pid = fork();
+			if (pid == 0) {
+				exec(p);
+				exit(127);
+			} else if (pid == -1) {
+				printf("Unable to fork to start process\n");
+			} else {
+				int status = 0;
+				waitpid(pid, &status);
+
+				if (status == 127) {
+					printf("%s: command not found\n", x);
+				} else {
+					printf("Program exited with code %d\n", status);
+				}
+			}
 		}
 	}
 
