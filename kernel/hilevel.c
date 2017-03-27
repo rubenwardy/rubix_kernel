@@ -83,12 +83,12 @@ void hilevel_handler_rst(ctx_t *ctx) {
 	TIMER0->Timer1Ctrl |= 0x00000020; // enable          timer interrupt
 	TIMER0->Timer1Ctrl |= 0x00000080; // enable          timer
 
-	UART0->IMSC        |= 0x00000010; // enable UART    (Rx) interrupt
-	UART0->CR           = 0x00000301; // enable UART (Tx+Rx)
+	UART1->IMSC        |= 0x00000010; // enable UART    (Rx) interrupt
+	UART1->CR           = 0x00000301; // enable UART (Tx+Rx)
 
 	GICC0->PMR          = 0x000000F0; // unmask all            interrupts
 	GICD0->ISENABLER1  |= 0x00000010; // enable timer          interrupt
-	GICD0->ISENABLER1  |= 0x00001000; // enable UART    (Rx) interrupt
+	GICD0->ISENABLER1  |= 0x00002000; // enable UART    (Rx) interrupt
 	GICC0->CTLR         = 0x00000001; // enable GIC interface
 	GICD0->CTLR         = 0x00000001; // enable GIC distributor
 
@@ -122,15 +122,18 @@ void hilevel_handler_irq(ctx_t *ctx) {
 		processes_runScheduler(ctx);
 		break;
 	}
-	case GIC_SOURCE_UART0: {
-		kprint(" uart0\n");
+	case GIC_SOURCE_UART1: {
+		kprint(" uart1\n");
 
-		u8 c = PL011_getc(UART0, true);
-		fides_terminal_input(c);
+		while (PL011_can_getc(UART1)) {
+			u8 c = PL011_getc(UART1, true);
+			fides_terminal_input(c);
+			printLine("Reading char");
+		}
 
 		blockedqueue_checkForBlockedInReads();
 
-		UART0->ICR = 0x10;
+		UART1->ICR = 0x10;
 		break;
 	} }
 

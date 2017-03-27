@@ -6,13 +6,20 @@ int gets(char* x, int n) {
 	while (i < n) {
 		int amt_read = read(STDIN_FILENO, &x[i], n - i);
 		i += amt_read;
-		if (amt_read == 0 || x[i - 1] == '\r') {
+		if (amt_read == 0) {
+			x[0] = '\0';
+			break;
+		} else if (x[i - 2] == '\r') {
+			x[i - 2] = '\0';
+			i -= 2;
+			break;
+		} else if (x[i - 1] == '\r' || x[i - 1] == '\n') {
 			x[i - 1] = '\0';
+			i -= 1;
 			break;
 		}
 
-		// TODO: allow UART0 input so I don't have to print this
-		write(STDOUT_FILENO, &x[i - amt_read], amt_read);
+		// write(STDOUT_FILENO, value, amt_read);
 	}
 	return i;
 }
