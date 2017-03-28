@@ -91,7 +91,7 @@ int fork() {
                 "mov %0, r0 \n" // assign r  = r0
               : "=r" (r)
               : "I" (SYS_FORK)
-              : "r0" );
+              : );
 
   return r;
 }
@@ -189,7 +189,7 @@ int dup2(int old, int new) {
                     "mov %0, r0 \n" // assign r  = r0
                   : "=r" (r)
                   : "I" (SYS_DUP2), "r" (old), "r" (new)
-                  : "r0" );
+                  : "r0", "r1" );
 
       return r;
 }
@@ -215,7 +215,7 @@ int kill( int pid, int x ) {
                 "mov %0, r0 \n" // assign r0 =    r
               : "=r" (r)
               : "I" (SYS_KILL), "r" (pid), "r" (x)
-              : "r0" );
+              : "r0", "r1" );
 
   return r;
 }
