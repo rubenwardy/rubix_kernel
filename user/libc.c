@@ -215,7 +215,7 @@ int kill( int pid, int x ) {
                 "mov %0, r0 \n" // assign r0 =    r
               : "=r" (r)
               : "I" (SYS_KILL), "r" (pid), "r" (x)
-              : "r0", "r1" );
+              : "r0" );
 
   return r;
 }

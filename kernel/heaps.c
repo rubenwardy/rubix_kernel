@@ -55,6 +55,14 @@ void heaps_init(MaxHeap *x) {
 }
 
 void heaps_insert(MaxHeap *x, int weight, pid_t pid) {
+	for (size_t i = 0; i < x->num_items; i++) {
+		if (x->items[i].pid == pid) {
+			printError("PID already exists in heap!");
+			x->items[i].weight = weight;
+			return;
+		}
+	}
+
 	MaxHeapItem item;
 	item.weight = -10000;
 	item.pid = pid;

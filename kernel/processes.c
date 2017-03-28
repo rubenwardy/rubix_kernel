@@ -19,6 +19,9 @@ pcb_t *processes_get(size_t i) {
 }
 
 pcb_t *processes_getCurrent() {
+	if (current->pid == 0) {
+		current = NULL;
+	}
 	return current;
 }
 
@@ -115,7 +118,7 @@ typedef struct {
 
 
 extern u32 tos_UserSpace;
-#define PAGE_SIZE 0x800
+#define PAGE_SIZE 4096
 #define MAX_PAGES 0x0010000 / PAGE_SIZE
 Page pages[MAX_PAGES];
 
@@ -123,6 +126,10 @@ u32 processes_allocateStack(pid_t pid) {
 	size_t ptr = 0;
 	while (pages[ptr].pid != 0) {
 		ptr++;
+		if (ptr >= MAX_PAGES) {
+			printError("FATAL: no stack space remaining");
+			return 0;
+		}
 	}
 
 	pages[ptr].pid = pid;
@@ -220,11 +227,10 @@ void processes_switchTo(ctx_t* ctx, int id)
 	kprint(" ===========\n");
 
 	if (current) {
+		memcpy(&current->ctx, ctx, sizeof(ctx_t));
 		if (processes[id].pid == current->pid) {
 			printLine("Already running process, no need to switch!");
 			return;
-		} else {
-			memcpy(&current->ctx, ctx, sizeof(ctx_t));
 		}
 	}
 	memcpy(ctx, &processes[id].ctx, sizeof(ctx_t));

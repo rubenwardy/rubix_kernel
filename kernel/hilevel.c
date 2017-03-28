@@ -222,12 +222,22 @@ u32 svc_handle_fork(ctx_t *ctx, pcb_t *current) {
 
 	pcb_t *new = processes_get(new_id);
 
-	u32 offset = current->stack_start - ctx->sp;
+	int offset = current->stack_start - ctx->sp;
+	if (offset < 0) {
+		printError("Stack size < 0!");
+		processes_remove(new->pid);
+		return -1;
+	}
+
 	new->stack_start = processes_allocateStack(new->pid);
 	new->ctx.sp = new->stack_start - offset;
 	memcpy((u32*)new->ctx.sp, (u32*)ctx->sp, offset);
 	new->ctx.gpr[0] = 0;
 	new->parent = current->pid;
+
+	if (offset != new->stack_start - new->ctx.sp) {
+		printError("Mismatching stack sizes!");
+	}
 
 	return new->pid;
 }
@@ -279,8 +289,8 @@ u32 svc_handle_exec(ctx_t *ctx, pcb_t *current) {
 u32 svc_handle_kill(ctx_t *ctx, pcb_t *current) {
 	printLine(" - kill");
 
-	pid_t pid = (pid_t) ctx->gpr[0];
-	int sig   = (int)  ctx->gpr[1];
+	int pid = (int) ctx->gpr[0];
+	int sig = (int) ctx->gpr[1];
 
 	if (pid > 0) {
 		printLine("   - pid exact");
@@ -407,6 +417,19 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 	printLine("SVC");
 
 	pcb_t *current = processes_getCurrent();
+
+	kprint("Stack size is: ");
+	printNum(current->stack_start - ctx->sp);
+	kprint("\n");
+	kprint("Start: ");
+	printNum(current->stack_start);
+	kprint("\n");
+	kprint("Current: ");
+	printNum(ctx->sp);
+	kprint("\n");
+	if (ctx->sp > current->stack_start) {
+		printError("Stack pointer out of bounds!");
+	}
 
 	switch (id) {
 	case SYS_YIELD:
