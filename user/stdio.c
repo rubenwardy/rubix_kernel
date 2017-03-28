@@ -50,7 +50,9 @@ void printf(const char *fmt, ...) {
 
 	va_end(args);
 
-	write(STDOUT_FILENO, buffer, output_length);
+	if (output_length > 0) {
+		write(STDOUT_FILENO, buffer, output_length);
+	}
 
 	if (output_length > 1024) {
 		char m[] = "printf: buffer overflow";

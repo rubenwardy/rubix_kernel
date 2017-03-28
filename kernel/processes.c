@@ -42,6 +42,10 @@ size_t processes_findByPID(pid_t pid) {
 }
 
 void processes_remove(pid_t pid) {
+	if (current && current->pid == pid) {
+		current = NULL;
+	}
+
 	size_t ptr = processes_findByPID(pid);
 	if (ptr == SIZE_MAX) {
 		printError("Can't remove process if it doesn't exist!");

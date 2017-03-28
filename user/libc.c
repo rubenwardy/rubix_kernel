@@ -91,7 +91,7 @@ int fork() {
                 "mov %0, r0 \n" // assign r  = r0
               : "=r" (r)
               : "I" (SYS_FORK)
-              : );
+              : "r0");
 
   return r;
 }
