@@ -234,10 +234,6 @@ u32 svc_handle_fork(ctx_t *ctx, pcb_t *current) {
 	memcpy((u32*)new->ctx.sp, (u32*)ctx->sp, offset);
 	new->ctx.gpr[0] = 0;
 
-	// r11 stores a pointer to the stack, and needs to be adjusted
-	// Time lost: 5 hours
-	new->ctx.gpr[11] += new->stack_start - current->stack_start;
-
 	new->parent = current->pid;
 
 	if (offset != new->stack_start - new->ctx.sp) {
