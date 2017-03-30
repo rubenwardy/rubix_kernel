@@ -8,7 +8,8 @@ https://thenounproject.com/term/hedgehog/582725/
 * SYS Calls
 	* `yield` - ends the current time slice.
 	* `write` - writes to an open file descriptor.
-	* `read`  - reads from an file descriptor. Returns length of read, 0 on EOF. Blocking.
+	* `read`  - reads from an file descriptor. Returns length of read, 0 on EOF.
+	            May blocking - see `set_nonblocking`.
 	* `close` - closes a file descriptor.
 	* `dup2`  - duplicates fd from `old` to `new`. `new` is closed if it already exists.
 	* `pipe`  - creates a pipe. fd[0] is read, fd[1] is write.
@@ -20,8 +21,10 @@ https://thenounproject.com/term/hedgehog/582725/
 	* `wait`  - waits for a child program to exit, and gives exit code.
 	* `kill`  - sends a kill signal to a process. Killed processes will not return an exit code.
 	            `signal` is not yet implemented.
+	* `set_nonblocking` - is not POSIX, unfortunately. Set pipe non-blocking.
 * LibC help functions
 	* `popen` - opens a process and returns a FD. Uses `fork`, `pipe`, `exec`, and `dup2`.
+	* `wait`/`waitpid` - both use the `wait` syscall.
 * Multi-processing
 	* **time slicing**      - timer based timer slices.
 	* **priority-based**    - priority(P) = priority_base(P) + slices_since_last_ran(P)
@@ -30,7 +33,7 @@ https://thenounproject.com/term/hedgehog/582725/
 	* **process groups**    - a limited type of process group, where all processes
 	                          that share a parent and the parent itself are in a group.
 * Objects
-	* `FiDes` - File descriptor. Interacted with using function pointers.
+	* `FiDes` - File descriptor. Interacted with using function pointers. Can be blocking or not.
 	* `pipe`  - Pointed to by a FD.
 
 ## References
