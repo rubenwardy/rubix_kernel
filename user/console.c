@@ -46,14 +46,18 @@ void main_console() {
 		char *p = strtok(x, " ");
 
 		if (strcmp(p, "fork") == 0) {
+			const char *cmd_name = strtok(NULL, " ");
+			const char *priority = strtok(NULL, " ");
 			int pid = fork();
 			if (pid == 0) {
-				const char *cmd_name = strtok(NULL, " ");
 				if (exec((char*)cmd_name) == -1) {
 					exit(1);
 				}
 			} else if (pid == -1) {
 				printf("Unable to fork to start process\n");
+			} else if (priority != NULL) {
+				printf("Set priority to %d\n", atoi(priority));
+				setpriority(pid, atoi(priority));
 			}
 		} else if (strcmp(p, "kill") == 0) {
 			pid_t pid = atoi(strtok(NULL, " "));
