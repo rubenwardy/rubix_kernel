@@ -11,10 +11,13 @@ extern void main_console();
 extern void main_P3();
 extern void main_P4();
 extern void main_P5();
+extern void main_philo();
 
 u32 getProgramInstAddress(const char *name) {
 	if (strcmp(name, "console") == 0) {
 		return (u32)&main_console;
+	} else if (strcmp(name, "philo") == 0) {
+		return (u32)&main_philo;
 	} else if (strcmp(name, "p3") == 0) {
 		return (u32)&main_P3;
 	} else if (strcmp(name, "p4") == 0) {
@@ -193,12 +196,17 @@ u32 svc_handle_read(ctx_t *ctx, pcb_t *current) {
 		if (node->read) {
 			size_t res = node->read(node, x, n);
 			if (res == SIZE_MAX) {
-				printLine(" - blocked");
-				scheduler_remove(current->pid);
-				current->blocked = BLOCKED_FILE;
-				blockedqueue_addFileRead(current->pid, fd, x, n);
-				processes_runScheduler(ctx);
-				return ctx->gpr[0];
+				if (node->is_blocking) {
+					printLine(" - blocked");
+					scheduler_remove(current->pid);
+					current->blocked = BLOCKED_FILE;
+					blockedqueue_addFileRead(current->pid, fd, x, n);
+					processes_runScheduler(ctx);
+					return ctx->gpr[0];
+				} else {
+					printLine(" - nothing read, but non-blocking");
+					return -1;
+				}
 			} else {
 				return res;
 			}
@@ -400,20 +408,39 @@ u32 svc_handle_dup2(ctx_t *ctx, pcb_t *current) {
 	return new;
 }
 
+u32 svc_handle_fd_setblock(ctx_t *ctx, pcb_t *current) {
+	printLine(" - fd_setblock");
+
+	int  fd          = (int)(ctx->gpr[0]);
+	bool is_blocking = (int)(ctx->gpr[1]);
+
+	printNum(fd);
+	kprint("\n");
+
+	FiDes *fides = fides_get(current->pid, fd);
+	if (fides) {
+		fides->is_blocking = is_blocking;
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
 //
 // Handle system calls
 //
-#define SYS_YIELD     ( 0x00 )
-#define SYS_WRITE     ( 0x01 )
-#define SYS_READ      ( 0x02 )
-#define SYS_FORK      ( 0x03 )
-#define SYS_EXIT      ( 0x04 )
-#define SYS_EXEC      ( 0x05 )
-#define SYS_KILL      ( 0x06 )
-#define SYS_WAIT      ( 0x07 )
-#define SYS_PIPE      ( 0x08 )
-#define SYS_CLOSE     ( 0x09 )
-#define SYS_DUP2      ( 0x10 )
+#define SYS_YIELD       ( 0x00 )
+#define SYS_WRITE       ( 0x01 )
+#define SYS_READ        ( 0x02 )
+#define SYS_FORK        ( 0x03 )
+#define SYS_EXIT        ( 0x04 )
+#define SYS_EXEC        ( 0x05 )
+#define SYS_KILL        ( 0x06 )
+#define SYS_WAIT        ( 0x07 )
+#define SYS_PIPE        ( 0x08 )
+#define SYS_CLOSE       ( 0x09 )
+#define SYS_DUP2        ( 0x10 )
+#define SYS_FD_SETBLOCK ( 0x11 )
 void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 	printLine("SVC");
 
@@ -463,6 +490,9 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 		break;
 	case SYS_DUP2:
 		ctx->gpr[0] = svc_handle_dup2(ctx, current);
+		break;
+	case SYS_FD_SETBLOCK:
+		ctx->gpr[0] = svc_handle_fd_setblock(ctx, current);
 		break;
 	case SYS_KILL:
 		ctx->gpr[0] = svc_handle_kill(ctx, current);

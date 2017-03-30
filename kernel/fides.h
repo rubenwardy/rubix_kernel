@@ -8,6 +8,8 @@ struct FiDes {
 	int refs;
 	int data; // Used to store pipe id or inode id
 
+	bool is_blocking;
+
 	size_t (*read)  (struct FiDes *node, char *data, size_t max);
 	size_t (*write) (struct FiDes *node, const char *data, size_t len);
 

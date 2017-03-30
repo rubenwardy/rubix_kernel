@@ -123,7 +123,7 @@ typedef struct {
 
 extern u32 tos_UserSpace;
 #define PAGE_SIZE 4096
-#define MAX_PAGES 0x0010000 / PAGE_SIZE
+#define MAX_PAGES 0x0100000 / PAGE_SIZE
 Page pages[MAX_PAGES];
 
 u32 processes_allocateStack(pid_t pid) {

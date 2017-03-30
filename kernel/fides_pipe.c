@@ -3,7 +3,7 @@
 #include "utils.h"
 
 #define PIPE_MAX_BUFFER 0x400
-#define MAX_PIPES 3
+#define MAX_PIPES 1000
 
 typedef struct {
 	size_t refs_read;

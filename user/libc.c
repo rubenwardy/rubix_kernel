@@ -206,6 +206,19 @@ int close(int fd) {
       return r;
 }
 
+int fd_setblock(int fd, int isblocking) {
+      int r;
+      asm volatile( "mov r0, %2 \n" // assign r0 = pid
+                    "mov r1, %3 \n" // assign r0 = pid
+                    "svc %1     \n" // make system call SYS_CLOSE
+                    "mov %0, r0 \n" // assign r  = r0
+                  : "=r" (r)
+                  : "I" (SYS_FD_SETBLOCK), "r" (fd), "r" (isblocking)
+                  : "r0" );
+
+      return r;
+}
+
 int kill( int pid, int x ) {
   int r;
 

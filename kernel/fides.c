@@ -1,7 +1,7 @@
 #include "fides.h"
 #include "utils.h"
 
-#define MAX_INODES 100
+#define MAX_INODES 1000
 
 FiDes fidess[MAX_INODES];
 
@@ -22,6 +22,7 @@ FiDes *fides_create(pid_t pid, u32 fid) {
 
 	fidess[ptr].pid  = pid;
 	fidess[ptr].id   = fid;
+	fidess[ptr].is_blocking = true;
 
 	kprint("Created fides id=");
 	printNum(fidess[ptr].id);
@@ -34,6 +35,7 @@ FiDes *fides_create(pid_t pid, u32 fid) {
 
 void fides_duplicate(pid_t pid, FiDes *old) {
 	FiDes *fides = fides_create(pid, old->id);
+	fides->is_blocking = old->is_blocking;
 	fides->data  = old->data;
 	fides->write = old->write;
 	fides->read  = old->read;
@@ -48,6 +50,7 @@ void fides_duplicateAlias(pid_t pid, u32 old, u32 new) {
 	FiDes *fides = fides_get(pid, old);
 	FiDes *fides_new = fides_create(pid, new);
 	fides_new->data  = fides->data;
+	fides_new->is_blocking = fides->is_blocking;
 	fides_new->write = fides->write;
 	fides_new->read  = fides->read;
 	fides_new->grab  = fides->grab;

@@ -19,7 +19,7 @@ typedef enum {
 } BlockedReason;
 
 
-#define MAX_PROCESSES 10
+#define MAX_PROCESSES 50
 // ^ Linux is 31,000 per user
 
 typedef struct {
