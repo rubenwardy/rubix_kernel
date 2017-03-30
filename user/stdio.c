@@ -32,7 +32,12 @@ void printf(const char *fmt, ...) {
 			} else if (c == 'd' || c == 'i') {
 				int x = va_arg(args, int);
 				char str[100];
-				itoa(&str[0], x);
+				if (x == 0){
+					str[0] = '0';
+					str[1] = '\0';
+				} else {
+					itoa(&str[0], x);
+				}
 				size_t ptr = 0;
 				while (str[ptr] != '\0' && output_length < 1024) {
 					buffer[output_length++] = str[ptr++];
