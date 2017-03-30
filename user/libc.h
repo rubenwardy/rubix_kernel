@@ -35,6 +35,7 @@ typedef int pid_t;
 #define SYS_CLOSE       ( 0x09 )
 #define SYS_DUP2        ( 0x10 )
 #define SYS_FD_SETBLOCK ( 0x11 )
+#define SYS_SETPRIORITY ( 0x12 )
 
 #define SIG_TERM      ( 0x00 )
 #define SIG_QUIT      ( 0x01 )
@@ -78,6 +79,8 @@ extern int dup2(int old, int new);
 extern int close(int fd);
 
 extern int fd_setblock(int fd, int isblocking);
+
+extern int setpriority(int who, int prio);
 
 // signal process identified by pid with signal x
 extern int  kill( pid_t pid, int x );

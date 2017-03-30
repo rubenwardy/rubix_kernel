@@ -68,5 +68,6 @@ extern pid_t processes_startByCtx(u8 priority, pid_t oldpid, ctx_t *ctx);
 extern void processes_switchTo(ctx_t* ctx, int id);
 extern int processes_runScheduler(ctx_t* ctx);
 extern void processes_unblockProcess(pcb_t *pcb);
+extern void processes_schedulerPriorityChanged(pcb_t *proc);
 
 #endif

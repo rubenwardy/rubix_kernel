@@ -426,6 +426,37 @@ u32 svc_handle_fd_setblock(ctx_t *ctx, pcb_t *current) {
 	}
 }
 
+u32 svc_handle_setpriority(ctx_t *ctx, pcb_t *current) {
+	kprint(" - setpriority ");
+
+	int who  = (int)(ctx->gpr[0]);
+	int prio = (int)(ctx->gpr[1]);
+
+	printNum(who);
+	kprint("\n");
+
+	size_t id = processes_findByPID(who);
+	if (id == SIZE_MAX) {
+		printError("Unable to find process to set priority of");
+		return -1;
+	}
+
+	pcb_t* proc = processes_get(id);
+	if (!proc) {
+		printError("Unable to get process by id");
+		return -1;
+	}
+
+	if (proc->parent != current->pid) {
+		printError("Process attempted to change priority of non-child!");
+		return -1;
+	}
+
+	proc->priority = prio;
+	processes_schedulerPriorityChanged(proc);
+	return 0;
+}
+
 //
 // Handle system calls
 //
@@ -441,6 +472,7 @@ u32 svc_handle_fd_setblock(ctx_t *ctx, pcb_t *current) {
 #define SYS_CLOSE       ( 0x09 )
 #define SYS_DUP2        ( 0x10 )
 #define SYS_FD_SETBLOCK ( 0x11 )
+#define SYS_SETPRIORITY ( 0x12 )
 void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 	printLine("SVC");
 
@@ -493,6 +525,9 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 		break;
 	case SYS_FD_SETBLOCK:
 		ctx->gpr[0] = svc_handle_fd_setblock(ctx, current);
+		break;
+	case SYS_SETPRIORITY:
+		ctx->gpr[0] = svc_handle_setpriority(ctx, current);
 		break;
 	case SYS_KILL:
 		ctx->gpr[0] = svc_handle_kill(ctx, current);

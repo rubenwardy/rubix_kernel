@@ -21,6 +21,7 @@ https://thenounproject.com/term/hedgehog/582725/
 	* `wait`  - waits for a child program to exit, and gives exit code.
 	* `kill`  - sends a kill signal to a process. Killed processes will not return an exit code.
 	            `signal` is not yet implemented.
+	* `setpriority` - set priority of child process.
 	* `set_nonblocking` - is not POSIX, unfortunately. Set pipe non-blocking.
 * LibC help functions
 	* `popen` - opens a process and returns a FD. Uses `fork`, `pipe`, `exec`, and `dup2`.

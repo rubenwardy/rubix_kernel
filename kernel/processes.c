@@ -265,3 +265,8 @@ extern void processes_unblockProcess(pcb_t *pcb) {
 	pcb->blocked = NOT_BLOCKED;
 	scheduler_add(pcb->pid, pcb->priority);
 }
+
+extern void processes_schedulerPriorityChanged(pcb_t *proc) {
+	scheduler_remove(proc->pid);
+	scheduler_add(proc->pid, proc->priority);
+}
