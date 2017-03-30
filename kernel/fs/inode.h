@@ -1,6 +1,6 @@
 #ifndef INODE_H
 #define INODE_H
-#include "hilevel.h"
+#include "../hilevel.h"
 
 struct INode {
 	u32 id;

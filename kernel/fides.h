@@ -1,5 +1,5 @@
-#ifndef INODE_H
-#define INODE_H
+#ifndef FIDES_H
+#define FIDES_H
 #include "hilevel.h"
 
 struct FiDes {

@@ -15,4 +15,4 @@ inspect-disk :
 	@hexdump -C ${DISK_FILE}
 
  launch-disk :
-	@python device/disk.py --host=${DISK_HOST} --port=${DISK_PORT} --file=${DISK_FILE} --block-num=${DISK_BLOCK_NUM} --block-len=${DISK_BLOCK_LEN}
+	@python device/disk.py --debug --host=${DISK_HOST} --port=${DISK_PORT} --file=${DISK_FILE} --block-num=${DISK_BLOCK_NUM} --block-len=${DISK_BLOCK_LEN}

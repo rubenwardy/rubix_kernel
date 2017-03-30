@@ -10,7 +10,7 @@
  QEMU_GDB         =        127.0.0.1:1234
  QEMU_UART        = stdio
  QEMU_UART       += telnet:127.0.0.1:1235,server
-#QEMU_UART       += telnet:127.0.0.1:1236,server
+ QEMU_UART       += telnet:127.0.0.1:1236,server
  QEMU_DISPLAY     = -nographic -display none
 #QEMU_DISPLAY     =            -display  sdl
 
@@ -22,7 +22,7 @@
 %.o   : %.s
 	@${LINARO_PATH}/bin/${LINARO_PREFIX}-as  $(addprefix -I , ${PROJECT_PATH} ${LINARO_PATH}/arm-eabi/libc/usr/include) -mcpu=cortex-a8                                       -g       -o ${@} ${<}
 %.o   : %.c
-	@${LINARO_PATH}/bin/${LINARO_PREFIX}-gcc $(addprefix -I , ${PROJECT_PATH} ${LINARO_PATH}/arm-eabi/libc/usr/include) -mcpu=cortex-a8 -mabi=aapcs -ffreestanding -std=gnu99 -g -c -O3 -o ${@} ${<}
+	@${LINARO_PATH}/bin/${LINARO_PREFIX}-gcc $(addprefix -I , ${PROJECT_PATH} ${LINARO_PATH}/arm-eabi/libc/usr/include) -mcpu=cortex-a8 -mabi=aapcs -ffreestanding -std=gnu99 -g -c -O -o ${@} ${<}
 
 %.elf : ${PROJECT_OBJECTS}
 	@${LINARO_PATH}/bin/${LINARO_PREFIX}-ld  $(addprefix -L ,                 ${LINARO_PATH}/arm-eabi/libc/usr/lib    ) -T ${*}.ld -o ${@} ${^} -lc -lgcc

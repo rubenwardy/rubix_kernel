@@ -4,6 +4,7 @@
 #include "fides.h"
 #include "fides_pipe.h"
 #include "fides_terminal.h"
+#include "fs/fs.h"
 #include "utils.h"
 
 // We're using staticly linked programs
@@ -72,6 +73,7 @@ void hilevel_handler_rst(ctx_t *ctx) {
 	blockedqueue_init();
 	fides_init();
 	fides_pipe_init();
+	fs_init();
 	processes_start(PRIORITY_NORMAL, 0x50, getProgramInstAddress("console"));
 
 	printLine(" - Setting current & ctx");
@@ -89,9 +91,13 @@ void hilevel_handler_rst(ctx_t *ctx) {
 	UART1->IMSC        |= 0x00000010; // enable UART    (Rx) interrupt
 	UART1->CR           = 0x00000301; // enable UART (Tx+Rx)
 
+	UART2->IMSC        |= 0x00000010; // enable UART    (Rx) interrupt
+	UART2->CR           = 0x00000301; // enable UART (Tx+Rx)
+
 	GICC0->PMR          = 0x000000F0; // unmask all            interrupts
 	GICD0->ISENABLER1  |= 0x00000010; // enable timer          interrupt
-	GICD0->ISENABLER1  |= 0x00002000; // enable UART    (Rx) interrupt
+	GICD0->ISENABLER1  |= 0x00002000; // enable UART1    (Rx) interrupt
+	GICD0->ISENABLER1  |= 0x00004000; // enable UART2    (Rx) interrupt
 	GICC0->CTLR         = 0x00000001; // enable GIC interface
 	GICD0->CTLR         = 0x00000001; // enable GIC distributor
 
@@ -108,6 +114,8 @@ void hilevel_handler_rst(ctx_t *ctx) {
 // Handle interrupts
 //
 void hilevel_handler_irq(ctx_t *ctx) {
+
+
 	printLine("IRQ");
 
 	// Step 2: read	the interrupt identifier so we know the source.
@@ -121,6 +129,10 @@ void hilevel_handler_irq(ctx_t *ctx) {
 	switch (id) {
 	case GIC_SOURCE_TIMER0: {
 		kprint(" timer\n");
+
+		// HACK
+		fs_disk_on_interrupt();
+
 		TIMER0->Timer1IntClr = 0x01;
 		processes_runScheduler(ctx);
 		break;
@@ -137,6 +149,13 @@ void hilevel_handler_irq(ctx_t *ctx) {
 		blockedqueue_checkForBlockedInReads();
 
 		UART1->ICR = 0x10;
+		break;
+	}
+	case GIC_SOURCE_UART2: {
+		kprint(" uart2\n");
+
+		fs_disk_on_interrupt();
+		UART2->ICR = 0x10;
 		break;
 	} }
 
