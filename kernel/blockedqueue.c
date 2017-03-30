@@ -83,8 +83,13 @@ void blockedqueue_checkForBlockedPipes(u32 pipe_id) {
 						} else {
 							printLine("[c4bp] unblocking process");
 							pcb_t *pcb = processes_get(processes_findByPID(blocked->pid));
-							pcb->ctx.gpr[0] = res;
-							processes_unblockProcess(pcb);
+							if (pcb) {
+								blocked->pid = 0;
+								pcb->ctx.gpr[0] = res;
+								processes_unblockProcess(pcb);
+							} else {
+								printError("[c4bp] Program does not exist!");
+							}
 						}
 					} else {
 						printLine("[c4bp] not right pipe");
@@ -112,9 +117,13 @@ void blockedqueue_checkForBlockedInReads() {
 					} else {
 						printLine("[c4bi] unblocking process");
 						pcb_t *pcb = processes_get(processes_findByPID(blocked->pid));
-						pcb->ctx.gpr[0] = res;
-						blocked->pid = 0;
-						processes_unblockProcess(pcb);
+						if (pcb) {
+							pcb->ctx.gpr[0] = res;
+							blocked->pid = 0;
+							processes_unblockProcess(pcb);
+						} else {
+							printError("[c4bp] Program does not exist!");
+						}
 					}
 				} else {
 					printLine("[c4bi] Is not pipe fides");
