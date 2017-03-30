@@ -17,9 +17,6 @@ FsDiskCmd current_cmd;
 char disk_msg_buffer[100];
 size_t disk_buffer_size;
 
-size_t numberOfBlocks;
-size_t blockSize;
-
 int xstoi(const char *xs, size_t n) {
 	int res = 0;
 	for (int ptr = n - 1; ptr > 0; ptr -= 2) {
@@ -29,19 +26,14 @@ int xstoi(const char *xs, size_t n) {
 	return res;
 }
 
-void _fs_disk_query();
 void fs_disk_init() {
 	memset(&current_cmd, 0, sizeof(FsDiskCmd));
 	memset(cmds, 0, sizeof(FsDiskCmd) * MAX_QUEUED_COMMANDS);
 	num_commands     = 0;
 	disk_buffer_size = 0;
-	numberOfBlocks   = 0;
-	blockSize        = 0;
 
 	// clear bad bytes
 	fs_disk_run_command("", NULL, NULL);
-
-	_fs_disk_query();
 }
 
 void _fs_disk_send_command() {
@@ -113,37 +105,4 @@ void fs_disk_on_interrupt() {
 			disk_msg_buffer[disk_buffer_size++] = c;
 		}
 	}
-}
-
-void _fs_disk_handle_query(char *resp, void *meta) {
-	if (strcmp(resp, "01") == 0) {
-		printError("[FsDisk] Error from disk ctr during disk query");
-		return;
-	}
-
-	strtok(resp, " "); // discard
-	char *data = strtok(NULL, " ");
-	if (!data) {
-		printError("[FsDisk] Error querying disk! Invalid response (no spaces)");
-		return;
-	}
-
-	size_t len = strlen(data);
-	if (len != 16) {
-		printError("[FsDisk] Error querying disk! Invalid response (too short)");
-		return;
-	}
-
-	numberOfBlocks = xstoi(data,     8);
-	blockSize      = xstoi(&data[8], 8);
-
-	kprint("[FsDisk] Received disk info (nblocks=");
-	printNum(numberOfBlocks);
-	kprint(", bsize=");
-	printNum(blockSize);
-	kprint(")\n");
-}
-
-void _fs_disk_query() {
-	fs_disk_run_command("00", &_fs_disk_handle_query, NULL);
 }
