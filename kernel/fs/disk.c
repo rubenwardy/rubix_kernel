@@ -15,7 +15,7 @@ size_t num_commands;
 FsDiskCmd cmds[MAX_QUEUED_COMMANDS];
 FsDiskCmd current_cmd;
 
-char disk_msg_buffer[550];
+char disk_msg_buffer[2048];
 size_t disk_buffer_size;
 
 int xstoi(const char *xs, size_t n) {

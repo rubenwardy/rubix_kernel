@@ -48,6 +48,20 @@ void _fs_writeSuperBlock() {
 	_fs_index_modified = false;
 }
 
+void _fs_writeINode(u32 block_num, INode *inode) {
+	u32 blockSize = fs_blocks_getBlockSize();
+	size_t size = sizeof(INode);
+	if (size > blockSize) {
+		printError("[Fs] INode does not fit into a single block!");
+		return;
+	}
+	char mem[blockSize];
+	memcpy(&mem[0], inode, size);
+	memset(&mem[size], 0, blockSize - size);
+	fs_blocks_writeBlock(block_num, mem, NULL, NULL);
+	_fs_index_modified = false;
+}
+
 void _fs_handle_readSuperBlock(u32 block_num, char *resp, void *meta) {
 	if (resp[0] == '\0') {
 		printError("[Fs] Initialising new file system");
@@ -55,6 +69,17 @@ void _fs_handle_readSuperBlock(u32 block_num, char *resp, void *meta) {
 		inode_index[0].block_num = 1;
 		_fs_index_modified = true;
 		_fs_writeSuperBlock();
+
+		INode inode;
+		inode.id        = 1;
+		inode.user_id   = 1;
+		inode.group_id  = 1;
+		inode.block_num = 2;
+		inode.size      = 1;
+		u8 p = INODE_PERM_READ | INODE_PERM_WRITE;
+		inode_set_perms(&inode, p, p, p);
+
+		_fs_writeINode(1, &inode);
 	} else {
 		printError("[Fs] Found filesystem super block");
 		_fs_index_modified = false;
@@ -73,6 +98,7 @@ void _fs_handle_readINode(u32 block_num, char *resp, void *meta) {
 	if (!meta) {
 		printError("[Fs] Unable to handle readINode as no meta was passed");
 	}
+
 	INode *inode = (INode*)resp;
 	INodeFetchOperation *rmeta = (INodeFetchOperation*)meta;
 	if (rmeta->callback) {
