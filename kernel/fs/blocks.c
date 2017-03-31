@@ -1,11 +1,12 @@
 #include "blocks.h"
 #include "disk.h"
+#include "fs.h"
 #include "../utils.h"
 
 size_t numberOfBlocks;
 size_t blockSize;
 
-#define BLOCK_CACHE_SIZE 4096
+#define BLOCK_CACHE_SIZE 2048
 #define MAX_BLOCK_SIZE 256
 #define MAX_BLOCKS_IN_CACHE 8
 char _fs_cache[BLOCK_CACHE_SIZE];
@@ -120,10 +121,6 @@ void _fs_blocks_fetchBlocks(size_t n, u32 block_nums[n], BulkBlockReadOperationC
 
 }
 
-void _fs_tmp_read_cb(u32 block_num, char *data, void *meta) {
-	printError("Read block!");
-}
-
 void _fs_blocks_handle_query(char *resp, void *meta) {
 	if (strcmp(resp, "01") == 0) {
 		printError("[FsBlocks] Error from disk ctr during disk query");
@@ -159,8 +156,7 @@ void _fs_blocks_handle_query(char *resp, void *meta) {
 		return;
 	}
 
-	// fs_blocks_writeBlock(0, "\0\1\0\1\0\1\0\1\0\1\0\1\0\1\0\1", NULL, NULL);
-	fs_blocks_readBlock(0, _fs_tmp_read_cb, NULL);
+	fs_on_disk_connected();
 }
 
 void fs_blocks_init() {
@@ -177,6 +173,10 @@ void fs_blocks_init() {
 	}
 
 	fs_disk_run_command("00", &_fs_blocks_handle_query, NULL);
+}
+
+u32 fs_blocks_getBlockSize() {
+	return blockSize;
 }
 
 void _fs_blocks_handleRead(char *resp, void *meta) {
