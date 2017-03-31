@@ -103,8 +103,25 @@ char *_fs_blocks_fetchFromCacheOrCreate(u32 block_num, BlockCacheIndexEntry **en
 	return _fs_blocks_insertIntoCache(block_num, NULL, entry);
 }
 
+BlockOperationMeta *_fs_blocks_allocateBlockOperationMeta(u32 block_num) {
+	for (size_t i = 0; i < MAX_BLOCK_OPERATIONS; i++) {
+		if (block_operation_meta[i].block_num == SIZE_MAX) {
+			block_operation_meta[i].block_num = block_num;
+			return &block_operation_meta[i];
+		}
+	}
+
+	printError("[FsBlocks] Out of block operation meta space!");
+
+	return NULL;
+}
+
 void _fs_blocks_fetchBlocks(size_t n, u32 block_nums[n], BulkBlockReadOperationCallback callback) {
 
+}
+
+void _fs_tmp_read_cb(u32 block_num, char *data, void *meta) {
+	printError("Read block!");
 }
 
 void _fs_blocks_handle_query(char *resp, void *meta) {
@@ -142,7 +159,8 @@ void _fs_blocks_handle_query(char *resp, void *meta) {
 		return;
 	}
 
-	fs_blocks_writeBlock(0, "\0\1\0\1\0\1\0\1\0\1\0\1\0\1\0\1", NULL, NULL);
+	// fs_blocks_writeBlock(0, "\0\1\0\1\0\1\0\1\0\1\0\1\0\1\0\1", NULL, NULL);
+	fs_blocks_readBlock(0, _fs_tmp_read_cb, NULL);
 }
 
 void fs_blocks_init() {
@@ -161,24 +179,86 @@ void fs_blocks_init() {
 	fs_disk_run_command("00", &_fs_blocks_handle_query, NULL);
 }
 
+void _fs_blocks_handleRead(char *resp, void *meta) {
+	if (numberOfBlocks == 0 || blockSize == 0) {
+		printError("[FsBlocks] Unable to handle read when disk hasn't been initialised yet!");
+		return;
+	}
+
+	if (!meta) {
+		printError("[FsBlocks] No meta proved by cmd?");
+		return;
+	}
+
+	BlockOperationMeta *bmeta = (BlockOperationMeta*)meta;
+
+	if (strcmp(resp, "01") == 0) {
+		bmeta->block_num = SIZE_MAX;
+		printError("[FsBlocks] Error from disk ctr during disk read");
+		return;
+	}
+
+	char data[MAX_BLOCK_SIZE+1];
+	for (u32 i = 0; i < blockSize; i++) {
+		char hex1 = resp[3 + i*2];
+		char hex2 = resp[4 + i*2];
+		data[i] = (xtoi(hex1) << 4) | xtoi(hex2);
+	}
+	data[blockSize] = '\0';
+
+	if (bmeta->callback) {
+		bmeta->callback(bmeta->block_num, data, bmeta->meta);
+	}
+
+	bmeta->block_num = SIZE_MAX;
+
+	printError("[FsBlocks] Read finished!");
+}
+
 void fs_blocks_readBlock(u32 block_num, BlockOperationCallback callback, void *meta) {
 	if (numberOfBlocks == 0 || blockSize == 0) {
 		printError("[FsBlocks] Unable to read when disk hasn't been initialised yet!");
 		return;
 	}
-}
 
-BlockOperationMeta *_fs_blocks_allocateBlockOperationMeta(u32 block_num) {
-	for (size_t i = 0; i < MAX_BLOCK_OPERATIONS; i++) {
-		if (block_operation_meta[i].block_num == SIZE_MAX) {
-			block_operation_meta[i].block_num = block_num;
-			return &block_operation_meta[i];
-		}
+	BlockCacheIndexEntry *entry = NULL;
+	char *data = _fs_blocks_fetchFromCacheOrCreate(block_num, &entry);
+	if (!data) {
+		printError("[FsBlocks] Unable to create cache item!");
+		return;
+	} else if (!entry) {
+		printError("[FsBlocks] Entry is NULL");
+		return;
 	}
 
-	printError("[FsBlocks] Out of block operation meta space!");
+	if (entry->loaded) {
+		printError("[FsBlocks] Warning: returning block from cache");
+		if (callback) {
+			callback(block_num, data, meta);
+		}
+		return;
+	}
 
-	return NULL;
+	char cmd[20] = "02 ";
+	size_t ptr = 3;
+
+	for (int i = 0; i < 4; i++) {
+		char byte = (block_num >> (i * 8)) & 0xFF;
+		cmd[ptr++] = itox(byte >> 4);
+		cmd[ptr++] = itox(byte & 0x0F);
+	}
+	cmd[ptr] = '\0';
+
+	BlockOperationMeta *bmeta = _fs_blocks_allocateBlockOperationMeta(block_num);
+	if (!bmeta) {
+		printError("[FsBlocks] Unable to write as allocateBlockOperationMeta returned NULL");
+		return;
+	}
+
+	bmeta->callback = callback;
+	bmeta->meta = meta;
+
+	fs_disk_run_command(cmd, &_fs_blocks_handleRead, (void*)bmeta);
 }
 
 void _fs_blocks_handleWrite(char *resp, void *meta) {
@@ -196,7 +276,7 @@ void _fs_blocks_handleWrite(char *resp, void *meta) {
 	}
 
 	if (bmeta->callback) {
-		bmeta->callback(bmeta->block_num, NULL, meta);
+		bmeta->callback(bmeta->block_num, NULL, bmeta->meta);
 	}
 
 	bmeta->block_num = SIZE_MAX;
