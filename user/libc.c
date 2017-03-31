@@ -219,6 +219,19 @@ int fd_setblock(int fd, int isblocking) {
       return r;
 }
 
+int fopen(char *path, char mode) {
+      int r;
+      asm volatile( "mov r0, %2 \n" // assign r0 = pid
+                    "mov r1, %3 \n" // assign r0 = pid
+                    "svc %1     \n" // make system call SYS_CLOSE
+                    "mov %0, r0 \n" // assign r  = r0
+                  : "=r" (r)
+                  : "I" (SYS_FOPEN), "r" (path), "r" (mode)
+                  : "r0" );
+
+      return r;
+}
+
 int setpriority(int who, int prio) {
       int r;
       asm volatile( "mov r0, %2 \n" // assign r0 = pid

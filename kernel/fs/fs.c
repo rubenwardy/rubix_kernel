@@ -80,6 +80,13 @@ void _fs_handle_readSuperBlock(u32 block_num, char *resp, void *meta) {
 		inode_set_perms(&inode, p, p, p);
 
 		_fs_writeINode(1, &inode);
+
+		u32 blockSize = fs_blocks_getBlockSize();
+		char mem[blockSize];
+		char *dat = "File content";
+		memcpy(&mem[0], dat, strlen(dat) * sizeof(char));
+		memset(&mem[strlen(dat)], 0, blockSize - 12);
+		fs_blocks_writeBlock(2, mem, NULL, NULL);
 	} else {
 		printError("[Fs] Found filesystem super block");
 		_fs_index_modified = false;

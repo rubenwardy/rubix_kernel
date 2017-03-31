@@ -20,5 +20,6 @@ extern void blockedqueue_addFileRead(pid_t pid, u32 fid, char *x, int max);
 extern BlockedProcess *blockedqueue_popNextProcessExit(pid_t pid, pid_t parent);
 extern void blockedqueue_checkForBlockedPipes(u32 pipe_id);
 extern void blockedqueue_checkForBlockedInReads();
+extern void blockedqueue_checkForBlockedFileOpen(u32 fid);
 
 #endif

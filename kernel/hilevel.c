@@ -3,6 +3,7 @@
 #include "blockedqueue.h"
 #include "fides.h"
 #include "fides_pipe.h"
+#include "fides_file.h"
 #include "fides_terminal.h"
 #include "fs/fs.h"
 #include "utils.h"
@@ -74,6 +75,8 @@ void hilevel_handler_rst(ctx_t *ctx) {
 	fides_init();
 	fides_pipe_init();
 	fs_init();
+	fides_file_init();
+
 	processes_start(PRIORITY_NORMAL, 0x50, getProgramInstAddress("console"));
 
 	printLine(" - Setting current & ctx");
@@ -476,6 +479,26 @@ u32 svc_handle_setpriority(ctx_t *ctx, pcb_t *current) {
 	return 0;
 }
 
+u32 svc_handle_fopen(ctx_t *ctx, pcb_t *current) {
+	kprint(" - fopen ");
+
+	char *path = (char*)(ctx->gpr[0]);
+	char  mode = (char )(ctx->gpr[1]);
+
+	kprint(path);
+	kprint(" mode=");
+	PL011_putc(UART0, mode, true);
+	kprint("\n");
+
+	FiDes *fides = fides_create(current->pid, current->fid_counter);
+	if (fides) {
+		fides_file_create(fides, path, mode);
+		return fides->id;
+	}
+
+	return -1;
+}
+
 //
 // Handle system calls
 //
@@ -492,6 +515,7 @@ u32 svc_handle_setpriority(ctx_t *ctx, pcb_t *current) {
 #define SYS_DUP2        ( 0x10 )
 #define SYS_FD_SETBLOCK ( 0x11 )
 #define SYS_SETPRIORITY ( 0x12 )
+#define SYS_FOPEN       ( 0x13 )
 void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 	printLine("SVC");
 
@@ -547,6 +571,9 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 		break;
 	case SYS_SETPRIORITY:
 		ctx->gpr[0] = svc_handle_setpriority(ctx, current);
+		break;
+	case SYS_FOPEN:
+		ctx->gpr[0] = svc_handle_fopen(ctx, current);
 		break;
 	case SYS_KILL:
 		ctx->gpr[0] = svc_handle_kill(ctx, current);

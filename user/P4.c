@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "libc.h"
+#include "stdio.h"
 
 uint32_t gcd( uint32_t x, uint32_t y ) {
   if     ( x == y ) {
@@ -17,6 +18,12 @@ uint32_t gcd( uint32_t x, uint32_t y ) {
 }
 
 void main_P4() {
+    int fd = fopen("a.txt", "r");
+    if (fd < 0) {
+        printf("FDError!\n");
+    }
+
+
     write( STDOUT_FILENO, "P4", 2 );
     exit( EXIT_SUCCESS );
   while( 1 ) {

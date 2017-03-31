@@ -1,6 +1,7 @@
 #include "blockedqueue.h"
 #include "fides.h"
 #include "fides_pipe.h"
+#include "fides_file.h"
 #include "fides_terminal.h"
 #include "utils.h"
 
@@ -130,6 +131,33 @@ void blockedqueue_checkForBlockedInReads() {
 				}
 			} else {
 				printError("[c4bi] Unable to find fides which is blocked :/");
+			}
+		}
+	}
+}
+
+void blockedqueue_checkForBlockedFile(u32 fid) {
+	for (int i = 0; i < MAX_PROCESSES; i++) {
+		BlockedProcess *blocked = &blockedProcesses[i];
+		if (blocked->pid > 0 && blocked->reason == BLOCKED_FILE) {
+			FiDes *fides = fides_get(blocked->pid, blocked->fid);
+			if (fides && fides->id == fid && fides_file_is_file(fides)) {
+				size_t res = fides->read(fides, blocked->ret2, blocked->meta1);
+				if (res == SIZE_MAX) {
+					printError("[c4bf] THIS SHOULD NEVER HAPPEN");
+				} else {
+					printLine("[c4bf] unblocking process");
+					pcb_t *pcb = processes_get(processes_findByPID(blocked->pid));
+					if (pcb) {
+						blocked->pid = 0;
+						pcb->ctx.gpr[0] = res;
+						processes_unblockProcess(pcb);
+					} else {
+						printError("[c4bf] Program does not exist!");
+					}
+				}
+			} else {
+				printLine("[c4bf] Is not file fides, or not right file fides");
 			}
 		}
 	}
