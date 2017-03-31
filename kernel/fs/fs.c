@@ -13,8 +13,21 @@ typedef struct __attribute__((__packed__)) {
 INodeIndexEntry inode_index[MAX_INODES];
 bool _fs_index_modified;
 
+#define MAX_INODE_FETCH_OPERATIONS 20
+
+typedef struct {
+	u32 block_num;
+	INodeFetchCallback callback;
+	void *meta;
+} INodeFetchOperation;
+INodeFetchOperation inode_fetch_operations[MAX_INODE_FETCH_OPERATIONS];
+
 void fs_init() {
 	_fs_index_modified = false;
+
+	for (size_t i = 0; i < MAX_INODE_FETCH_OPERATIONS; i++) {
+		inode_fetch_operations[i].block_num = SIZE_MAX;
+	}
 
 	fs_disk_init();
 	fs_blocks_init();
@@ -48,12 +61,53 @@ void _fs_handle_readSuperBlock(u32 block_num, char *resp, void *meta) {
 
 		memcpy(&inode_index[0], resp, MAX_INODES * sizeof(INodeIndexEntry));
 	}
+
+	fs_fetchINode("a.txt", NULL, NULL);
 }
 
 void fs_on_disk_connected() {
 	fs_blocks_readBlock(0, &_fs_handle_readSuperBlock, NULL);
 }
 
-INode *fs_get_inode(const char* path) {
+void _fs_handle_readINode(u32 block_num, char *resp, void *meta) {
+	if (!meta) {
+		printError("[Fs] Unable to handle readINode as no meta was passed");
+	}
+	INode *inode = (INode*)resp;
+	INodeFetchOperation *rmeta = (INodeFetchOperation*)meta;
+	if (rmeta->callback) {
+		rmeta->callback(inode, rmeta->meta);
+	}
+	rmeta->block_num = SIZE_MAX;
+}
+
+INodeFetchOperation *_fs_allocateINodeFetchOperation(u32 block_num) {
+	for (size_t i = 0; i < MAX_INODE_FETCH_OPERATIONS; i++) {
+		if (inode_fetch_operations[i].block_num == SIZE_MAX) {
+			inode_fetch_operations[i].block_num = block_num;
+			return &inode_fetch_operations[i];
+		}
+	}
+
+	printError("[Fs] Out of inode fetch operation meta space!");
+
 	return NULL;
+}
+
+bool fs_fetchINode(const char *path, INodeFetchCallback callback, void *meta) {
+	for (int i = 0; i < MAX_INODES; i++) {
+		if (strcmp(inode_index[i].path, path) == 0) {
+			INodeFetchOperation *rmeta = _fs_allocateINodeFetchOperation(inode_index[i].block_num);
+			if (!rmeta) {
+				printError("[Fs] Unable to read as allocateINodeFetchOperation returned NULL");
+				return false;
+			}
+			rmeta->callback = callback;
+			rmeta->meta = meta;
+
+			fs_blocks_readBlock(inode_index[i].block_num, &_fs_handle_readINode, (void*)rmeta);
+			return true;
+		}
+	}
+	return false;
 }

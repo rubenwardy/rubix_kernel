@@ -4,8 +4,10 @@
 #include "inode.h"
 #include "disk.h"
 
+typedef void (*INodeFetchCallback)(INode *inode, void *meta);
+
 extern void fs_init();
 extern void fs_on_disk_connected();
-extern INode *fs_get_inode(const char *path);
+extern bool fs_fetchINode(const char *path, INodeFetchCallback callback, void *meta);
 
 #endif
