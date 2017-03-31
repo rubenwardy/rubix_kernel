@@ -75,7 +75,7 @@ void _fs_handle_readSuperBlock(u32 block_num, char *resp, void *meta) {
 		inode.user_id   = 1;
 		inode.group_id  = 1;
 		inode.block_num = 2;
-		inode.size      = 1;
+		inode.size      = 12;
 		u8 p = INODE_PERM_READ | INODE_PERM_WRITE;
 		inode_set_perms(&inode, p, p, p);
 

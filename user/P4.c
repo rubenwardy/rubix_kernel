@@ -18,10 +18,14 @@ uint32_t gcd( uint32_t x, uint32_t y ) {
 }
 
 void main_P4() {
-    int fd = fopen("a.txt", "r");
+    int fd = fopen("a.txt", 'r');
     if (fd < 0) {
         printf("FDError!\n");
     }
+
+    char buffer[100];
+    int n = read(fd, buffer, 100);
+    write(STDOUT_FILENO, buffer, n);
 
 
     write( STDOUT_FILENO, "P4", 2 );
