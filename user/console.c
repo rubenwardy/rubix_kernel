@@ -78,7 +78,7 @@ void main_console() {
 				if (status == 127) {
 					printf("%s: command not found\n", x);
 				} else {
-					printf("Program exited with code %d\n", status);
+					printf("\n\nProgram exited with code %d\n", status);
 				}
 			}
 		}

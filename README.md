@@ -1,8 +1,5 @@
 # Rubix OS
 
-Hedgehog logo © Laymik, licensed under CC-BY 3.0 US.
-https://thenounproject.com/term/hedgehog/582725/
-
 ## Features
 
 * SYS Calls
@@ -13,6 +10,7 @@ https://thenounproject.com/term/hedgehog/582725/
 	* `close` - closes a file descriptor.
 	* `dup2`  - duplicates fd from `old` to `new`. `new` is closed if it already exists.
 	* `pipe`  - creates a pipe. fd[0] is read, fd[1] is write.
+	* `fopen` - open file. Not quite POSIX, as it's non-blocking
 	* `fork`  - clones process.
 	            Return value is 0 if child, PID of child if parent, -1 if error.
 	* `exec`  - replaces the process with another program. PID is kept.
@@ -26,16 +24,18 @@ https://thenounproject.com/term/hedgehog/582725/
 * LibC help functions
 	* `popen` - opens a process and returns a FD. Uses `fork`, `pipe`, `exec`, and `dup2`.
 	* `wait`/`waitpid` - both use the `wait` syscall.
-* Multi-processing
+* Processe
 	* **time slicing**      - timer based timer slices.
 	* **priority-based**    - priority(P) = priority_base(P) + slices_since_last_ran(P)
 	* **blocked queue**     - for processes waiting for a process or file resource.
 	* **process ownership** - processes have a parent, which can kill/wait them.
 	* **process groups**    - a limited type of process group, where all processes
 	                          that share a parent and the parent itself are in a group.
-* Objects
+* Files
 	* `FiDes` - File descriptor. Interacted with using function pointers. Can be blocking or not.
 	* `pipe`  - Pointed to by a FD.
+	* `in/out/err` - these are "files" too!
+	* `filesystem` - Files are limited to 256 bytes, maximum of 10 files.
 
 ## References
 
