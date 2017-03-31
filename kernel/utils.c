@@ -4,7 +4,9 @@
 void kprint(const char *cs) {
 	size_t ptr = 0;
 	while (cs[ptr] != '\0') {
-		PL011_putc(UART0, cs[ptr], true);
+		if (cs[ptr] != '\r') {
+			PL011_putc(UART0, cs[ptr], true);
+		}
 		ptr++;
 	}
 }
