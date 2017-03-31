@@ -1,4 +1,4 @@
-#include "heaps.h"
+#include "maxheap.h"
 #include "utils.h"
 
 size_t parent(size_t i) {
@@ -50,11 +50,11 @@ void increaseKey(MaxHeap *x, size_t i, int weight) {
 	}
 }
 
-void heaps_init(MaxHeap *x) {
+void maxheap_init(MaxHeap *x) {
 	x->num_items = 0;
 }
 
-void heaps_insert(MaxHeap *x, int weight, pid_t pid) {
+void maxheap_insert(MaxHeap *x, int weight, pid_t pid) {
 	for (size_t i = 0; i < x->num_items; i++) {
 		if (x->items[i].pid == pid) {
 			printError("PID already exists in heap!");
@@ -70,7 +70,7 @@ void heaps_insert(MaxHeap *x, int weight, pid_t pid) {
 	increaseKey(x, x->num_items - 1, weight);
 }
 
-bool heaps_remove(MaxHeap *x, pid_t pid) {
+bool maxheap_remove(MaxHeap *x, pid_t pid) {
 	for (size_t i = 0; i < x->num_items; i++) {
 		if (x->items[i].pid == pid) {
 			x->num_items--;
@@ -87,7 +87,7 @@ bool heaps_remove(MaxHeap *x, pid_t pid) {
 	return false;
 }
 
-MaxHeapItem heaps_extractMax(MaxHeap *x) {
+MaxHeapItem maxheap_extractMax(MaxHeap *x) {
 	if (x->num_items < 1) {
 		MaxHeapItem item = { 0, 0 };
 		return item;
@@ -100,13 +100,13 @@ MaxHeapItem heaps_extractMax(MaxHeap *x) {
 	return max;
 }
 
-void heaps_increaseAll(MaxHeap *x, int v) {
+void maxheap_increaseAll(MaxHeap *x, int v) {
 	for (int i = 0; i < x->num_items; i++) {
 		x->items[i].weight += v;
 	}
 }
 
-void heaps_print(MaxHeap *x) {
+void maxheap_print(MaxHeap *x) {
 	for (int i = 0; i < x->num_items; i++) {
 		printNum(x->items[i].pid);
 		kprint("(");
