@@ -5,9 +5,9 @@
 size_t numberOfBlocks;
 size_t blockSize;
 
-#define BLOCK_CACHE_SIZE 1024
-#define MAX_BLOCKS_IN_CACHE 64
-#define MAX_BLOCK_SIZE 100
+#define BLOCK_CACHE_SIZE 4096
+#define MAX_BLOCK_SIZE 256
+#define MAX_BLOCKS_IN_CACHE 8
 char _fs_cache[BLOCK_CACHE_SIZE];
 
 typedef struct {
@@ -303,7 +303,7 @@ void fs_blocks_writeBlock(u32 block_num, char *content, BlockOperationCallback c
 	memcpy(data, content, blockSize * sizeof(char));
 	entry->loaded = true; // TODO: is this correct?
 
-	char cmd[100] = "01 ";
+	char cmd[MAX_BLOCK_SIZE*2 + 20] = "01 ";
 	size_t ptr = 3;
 
 	for (int i = 0; i < 4; i++) {

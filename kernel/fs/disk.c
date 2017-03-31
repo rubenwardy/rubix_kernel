@@ -3,7 +3,7 @@
 #include "../utils.h"
 
 #define MAX_QUEUED_COMMANDS 10
-#define MAX_CMD 120
+#define MAX_CMD 300
 
 typedef struct {
 	char cmd[MAX_CMD];
@@ -15,7 +15,7 @@ size_t num_commands;
 FsDiskCmd cmds[MAX_QUEUED_COMMANDS];
 FsDiskCmd current_cmd;
 
-char disk_msg_buffer[100];
+char disk_msg_buffer[300];
 size_t disk_buffer_size;
 
 int xstoi(const char *xs, size_t n) {
