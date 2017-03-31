@@ -3,9 +3,10 @@
 #include "../utils.h"
 
 #define MAX_QUEUED_COMMANDS 10
+#define MAX_CMD 120
 
 typedef struct {
-	char *cmd;
+	char cmd[MAX_CMD];
 	DiskCommandHandler handler;
 	void *data;
 } FsDiskCmd;
@@ -47,10 +48,10 @@ void _fs_disk_send_command() {
 }
 
 void _fs_disk_start_from_queue() {
-	if (cmds[0].cmd != NULL) {
+	if (cmds[0].cmd[0] != '\0') {
 		printLine("[FsDisk] Popping command from queue");
 
-		current_cmd.cmd     = cmds[0].cmd;
+		memcpy(current_cmd.cmd, cmds[0].cmd, MAX_CMD * sizeof(char));
 		current_cmd.handler = cmds[0].handler;
 		current_cmd.data    = cmds[0].data;
 		_fs_disk_send_command();
@@ -59,20 +60,26 @@ void _fs_disk_start_from_queue() {
 			memcpy(&cmds[i-1], &cmds[i], sizeof(FsDiskCmd));
 		}
 		num_commands--;
-		cmds[num_commands].cmd = NULL;
+		cmds[num_commands].cmd[0] = '\0';
 	}
 }
 
 void fs_disk_run_command(char *cmd, DiskCommandHandler handler, void *meta) {
-	if (current_cmd.cmd == NULL) {
+	if (cmd[0] == '\0') {
+		cmd = " ";
+	}
+	if (current_cmd.cmd[0] == '\0') {
 		// immediately execute command
-		current_cmd.cmd     = cmd;
+		memcpy(&current_cmd.cmd[0], cmd, strlen(cmd));
+		current_cmd.cmd[strlen(cmd)] = '\0';
 		current_cmd.handler = handler;
 		current_cmd.data    = meta;
 		_fs_disk_send_command();
 	} else {
 		printLine("[FsDisk] Queuing command");
-		cmds[num_commands].cmd     = cmd;
+
+		memcpy(&cmds[num_commands].cmd[0], cmd, strlen(cmd) * sizeof(char));
+		cmds[num_commands].cmd[strlen(cmd)] = '\0';
 		cmds[num_commands].handler = handler;
 		cmds[num_commands].data    = meta;
 		num_commands++;
@@ -80,12 +87,12 @@ void fs_disk_run_command(char *cmd, DiskCommandHandler handler, void *meta) {
 }
 
 void _fs_on_received_msg(char *msg) {
-	if (current_cmd.cmd) {
+	if (current_cmd.cmd[0] != '\0') {
 		printLine("[FsDisk] Received response, processing...");
 		if (current_cmd.handler) {
 			current_cmd.handler(msg, current_cmd.data);
 		}
-		current_cmd.cmd = NULL;
+		current_cmd.cmd[0] = '\0';
 	} else {
 		printError("[FsDisk] No current command!");
 	}
