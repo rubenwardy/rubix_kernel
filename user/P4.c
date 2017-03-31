@@ -27,6 +27,13 @@ void main_P4() {
     int n = read(fd, buffer, 100);
     write(STDOUT_FILENO, buffer, n);
 
+    // int fd = fopen("a.txt", 'w');
+    // if (fd < 0) {
+    //     printf("FDError!\n");
+    // }
+    //
+    // write(fd, "hello", 5);
+
 
     write( STDOUT_FILENO, "P4", 2 );
     exit( EXIT_SUCCESS );

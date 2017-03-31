@@ -10,6 +10,8 @@ typedef struct {
 	INode inode;
 	int ptr;
 	char data[256];
+	char mode;
+	bool is_closed;
 } FidesFileEntry;
 
 #define MAX_FIDES_FILES 10
@@ -64,7 +66,22 @@ size_t fides_file_read(FiDes *node, char *data, size_t max) {
 }
 
 size_t fides_file_write(FiDes *node, const char *data, size_t len) {
-	return 0;
+	FidesFileEntry *entry = NULL;
+	for (size_t i = 0; i < MAX_FIDES_FILES; i++) {
+		if (_fides_files[i].id == node->data) {
+			entry = &_fides_files[i];
+			break;
+		}
+	}
+
+	if (!entry) {
+		printError("[FidesFile] Unable to get entry for file!");
+		return 0;
+	}
+
+	memcpy(&(entry->data[entry->ptr]), data, len);
+	entry->ptr += len;
+	return len;
 }
 
 void fides_file_grab(FiDes *node) {
@@ -72,7 +89,25 @@ void fides_file_grab(FiDes *node) {
 }
 
 void fides_file_drop(FiDes *node) {
-	// TODO: unimplemented
+	FidesFileEntry *entry = NULL;
+	for (size_t i = 0; i < MAX_FIDES_FILES; i++) {
+		if (_fides_files[i].id == node->data) {
+			entry = &_fides_files[i];
+			break;
+		}
+	}
+
+	if (!entry) {
+		printError("[FidesFile] Unable to get entry for file!");
+		return;
+	}
+
+	if (entry->inode.id > 0) {
+		fs_blocks_writeBlock(entry->inode.block_num, entry->data, NULL, NULL);
+		entry->id = 0;
+	} else {
+		entry->is_closed = true;
+	}
 }
 
 void _fides_file_handle_read_data(u32 block_num, char *resp, void *meta) {
@@ -98,7 +133,12 @@ void _fides_file_handle_fetch_inode(INode *inode, void *meta) {
 
 	memcpy(&entry->inode, inode, sizeof(INode));
 
-	fs_blocks_readBlock(inode->block_num, &_fides_file_handle_read_data, meta);
+	if (entry->mode != 'w') {
+		fs_blocks_readBlock(inode->block_num, &_fides_file_handle_read_data, meta);
+	} else if (entry->is_closed) {
+		fs_blocks_writeBlock(entry->inode.block_num, entry->data, NULL, NULL);
+		entry->id = 0;
+	}
 }
 
 void fides_file_create(FiDes *one, char *path, char mode) {
@@ -113,6 +153,9 @@ void fides_file_create(FiDes *one, char *path, char mode) {
 	FidesFileEntry *entry = _fides_file_allocateEntry();
 	one->data = entry->id;
 	entry->fid = one->id;
+	entry->mode = mode;
+	entry->is_closed = false;
+	memset(&(entry->data), 0, 256 * sizeof(char));
 
 	fs_fetchINode(path, &_fides_file_handle_fetch_inode, (void*)entry);
 }
