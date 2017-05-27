@@ -38,7 +38,7 @@ void fs_disk_init() {
 }
 
 void _fs_disk_send_command() {
-	printLine("[FsDisk] Sending command");
+	printLine("fs:disk", "Sending command");
 
 	size_t ptr = 0;
 	while (current_cmd.cmd[ptr] != '\0') {
@@ -49,7 +49,7 @@ void _fs_disk_send_command() {
 
 void _fs_disk_start_from_queue() {
 	if (cmds[0].cmd[0] != '\0') {
-		printLine("[FsDisk] Popping command from queue");
+		printLine("fs:disk", "Popping command from queue");
 
 		memcpy(current_cmd.cmd, cmds[0].cmd, MAX_CMD * sizeof(char));
 		current_cmd.handler = cmds[0].handler;
@@ -76,7 +76,7 @@ void fs_disk_run_command(char *cmd, DiskCommandHandler handler, void *meta) {
 		current_cmd.data    = meta;
 		_fs_disk_send_command();
 	} else {
-		printLine("[FsDisk] Queuing command");
+		printLine("fs:disk", "Queuing command");
 
 		memcpy(&cmds[num_commands].cmd[0], cmd, strlen(cmd) * sizeof(char));
 		cmds[num_commands].cmd[strlen(cmd)] = '\0';
@@ -88,13 +88,13 @@ void fs_disk_run_command(char *cmd, DiskCommandHandler handler, void *meta) {
 
 void _fs_on_received_msg(char *msg) {
 	if (current_cmd.cmd[0] != '\0') {
-		printLine("[FsDisk] Received response, processing...");
+		printLine("fs:disk", "Received response, processing...");
 		if (current_cmd.handler) {
 			current_cmd.handler(msg, current_cmd.data);
 		}
 		current_cmd.cmd[0] = '\0';
 	} else {
-		printError("[FsDisk] No current command!");
+		printError("fs:disk", "No current command!");
 	}
 	_fs_disk_start_from_queue();
 }

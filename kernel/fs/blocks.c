@@ -32,14 +32,15 @@ typedef void (*BulkBlockReadOperationCallback)(int n, u32 address_num[n], char *
 
 char *_fs_blocks_fetchFromCache(u32 block_num, BlockCacheIndexEntry **entry) {
 	if (numberOfBlocks == 0 || blockSize == 0) {
-		printError("[FsBlocks] Unable to write when disk hasn't been initialised yet!");
+		printError("fs:blocks", "Unable to write when disk hasn't been initialised yet!");
 		return NULL;
 	}
 
 	size_t max_blocks_in_cache = BLOCK_CACHE_SIZE / blockSize;
 	for (size_t i = 0; i < max_blocks_in_cache; i++) {
 		if (block_cache_index[i].block_num == block_num) {
-			kprint("[FsBlocks] Found ");
+			kprintmod("fs:blocks");
+			kprint("Found ");
 			printNum(block_num);
 			kprint(" in the cache at ");
 			printNum(i);
@@ -51,28 +52,30 @@ char *_fs_blocks_fetchFromCache(u32 block_num, BlockCacheIndexEntry **entry) {
 			} else {
 				kprint("\n");
 			}
-
+			//block_cache_index[i].loaded = false;
 			return &_fs_cache[i * blockSize];
 		}
 	}
 
-	kprint("[FsBlocks] Block ");
+	kprintmod("fs:blocks");
+	kprint("Block ");
 	printNum(block_num);
-	printLine(" not in cache!");
+	printLine("fs:blocks", " not in cache!");
 
 	return NULL;
 }
 
 char *_fs_blocks_insertIntoCache(u32 block_num, char *data, BlockCacheIndexEntry **entry) {
 	if (numberOfBlocks == 0 || blockSize == 0) {
-		printError("[FsBlocks] Unable to write when disk hasn't been initialised yet!");
+		printError("fs:blocks", "Unable to write when disk hasn't been initialised yet!");
 		return false;
 	}
 
 	size_t max_blocks_in_cache = BLOCK_CACHE_SIZE / blockSize;
 	for (size_t i = 0; i < max_blocks_in_cache; i++) {
 		if (block_cache_index[i].block_num == SIZE_MAX) {
-			kprint("[FsBlocks] Inserting ");
+			kprintmod("fs:blocks");
+			kprint("Inserting ");
 			printNum(block_num);
 			kprint(" into cache at ");
 			printNum(i);
@@ -91,7 +94,7 @@ char *_fs_blocks_insertIntoCache(u32 block_num, char *data, BlockCacheIndexEntry
 		}
 	}
 
-	printError("[FsBlocks] Unable to insert block into cache, no more spaces!");
+	printError("fs:blocks", "Unable to insert block into cache, no more spaces!");
 	return NULL;
 }
 
@@ -112,7 +115,7 @@ BlockOperationMeta *_fs_blocks_allocateBlockOperationMeta(u32 block_num) {
 		}
 	}
 
-	printError("[FsBlocks] Out of block operation meta space!");
+	printError("fs:blocks", "Out of block operation meta space!");
 
 	return NULL;
 }
@@ -123,34 +126,35 @@ void _fs_blocks_fetchBlocks(size_t n, u32 block_nums[n], BulkBlockReadOperationC
 
 void _fs_blocks_handle_query(char *resp, void *meta) {
 	if (strcmp(resp, "01") == 0) {
-		printError("[FsBlocks] Error from disk ctr during disk query");
+		printError("fs:blocks", "Error from disk ctr during disk query");
 		return;
 	}
 
 	strtok(resp, " "); // discard
 	char *data = strtok(NULL, " ");
 	if (!data) {
-		printError("[FsBlocks] Error querying disk! Invalid response (no spaces)");
+		printError("fs:blocks", "Error querying disk! Invalid response (no spaces)");
 		return;
 	}
 
 	size_t len = strlen(data);
 	if (len != 16) {
-		printError("[FsBlocks] Error querying disk! Invalid response (too short)");
+		printError("fs:blocks", "Error querying disk! Invalid response (too short)");
 		return;
 	}
 
 	numberOfBlocks = xstoi(data,     8);
 	blockSize      = xstoi(&data[8], 8);
 
-	kprint("[FsBlocks] Received disk info (nblocks=");
+	kprintmod("fs:blocks");
+	kprint("Received disk info (nblocks=");
 	printNum(numberOfBlocks);
 	kprint(", bsize=");
 	printNum(blockSize);
 	kprint(")\n");
 
 	if (blockSize > MAX_BLOCK_SIZE) {
-		printError("[FsBlock] Block size exceeds maximum!");
+		printError("fs:blocks", "[FsBlock] Block size exceeds maximum!");
 		numberOfBlocks = 0;
 		blockSize = 0;
 		return;
@@ -181,12 +185,12 @@ u32 fs_blocks_getBlockSize() {
 
 void _fs_blocks_handleRead(char *resp, void *meta) {
 	if (numberOfBlocks == 0 || blockSize == 0) {
-		printError("[FsBlocks] Unable to handle read when disk hasn't been initialised yet!");
+		printError("fs:blocks", "Unable to handle read when disk hasn't been initialised yet!");
 		return;
 	}
 
 	if (!meta) {
-		printError("[FsBlocks] No meta proved by cmd?");
+		printError("fs:blocks", "No meta proved by cmd?");
 		return;
 	}
 
@@ -194,7 +198,7 @@ void _fs_blocks_handleRead(char *resp, void *meta) {
 
 	if (strcmp(resp, "01") == 0) {
 		bmeta->block_num = SIZE_MAX;
-		printError("[FsBlocks] Error from disk ctr during disk read");
+		printError("fs:blocks", "Error from disk ctr during disk read");
 		return;
 	}
 
@@ -212,27 +216,27 @@ void _fs_blocks_handleRead(char *resp, void *meta) {
 
 	bmeta->block_num = SIZE_MAX;
 
-	printError("[FsBlocks] Read finished!");
+	printError("fs:blocks", "Read finished!");
 }
 
 void fs_blocks_readBlock(u32 block_num, BlockOperationCallback callback, void *meta) {
 	if (numberOfBlocks == 0 || blockSize == 0) {
-		printError("[FsBlocks] Unable to read when disk hasn't been initialised yet!");
+		printError("fs:blocks", "Unable to read when disk hasn't been initialised yet!");
 		return;
 	}
 
 	BlockCacheIndexEntry *entry = NULL;
 	char *data = _fs_blocks_fetchFromCacheOrCreate(block_num, &entry);
 	if (!data) {
-		printError("[FsBlocks] Unable to create cache item!");
+		printError("fs:blocks", "Unable to create cache item!");
 		return;
 	} else if (!entry) {
-		printError("[FsBlocks] Entry is NULL");
+		printError("fs:blocks", "Entry is NULL");
 		return;
 	}
 
 	if (entry->loaded) {
-		printError("[FsBlocks] Warning: returning block from cache");
+		printError("fs:blocks", "Warning: returning block from cache");
 		if (callback) {
 			callback(block_num, data, meta);
 		}
@@ -251,7 +255,7 @@ void fs_blocks_readBlock(u32 block_num, BlockOperationCallback callback, void *m
 
 	BlockOperationMeta *bmeta = _fs_blocks_allocateBlockOperationMeta(block_num);
 	if (!bmeta) {
-		printError("[FsBlocks] Unable to write as allocateBlockOperationMeta returned NULL");
+		printError("fs:blocks", "Unable to write as allocateBlockOperationMeta returned NULL");
 		return;
 	}
 
@@ -263,7 +267,7 @@ void fs_blocks_readBlock(u32 block_num, BlockOperationCallback callback, void *m
 
 void _fs_blocks_handleWrite(char *resp, void *meta) {
 	if (!meta) {
-		printError("[FsBlocks] No meta proved by cmd?");
+		printError("fs:blocks", "No meta proved by cmd?");
 		return;
 	}
 
@@ -271,7 +275,7 @@ void _fs_blocks_handleWrite(char *resp, void *meta) {
 
 	if (strcmp(resp, "01") == 0) {
 		bmeta->block_num = SIZE_MAX;
-		printError("[FsBlocks] Error from disk ctr during disk write");
+		printError("fs:blocks", "Error from disk ctr during disk write");
 		return;
 	}
 
@@ -281,22 +285,22 @@ void _fs_blocks_handleWrite(char *resp, void *meta) {
 
 	bmeta->block_num = SIZE_MAX;
 
-	printError("[FsBlocks] Write finished!");
+	printError("fs:blocks", "Write finished!");
 }
 
 void fs_blocks_writeBlock(u32 block_num, char *content, BlockOperationCallback callback, void *meta) {
 	if (numberOfBlocks == 0 || blockSize == 0) {
-		printError("[FsBlocks] Unable to write when disk hasn't been initialised yet!");
+		printError("fs:blocks", "Unable to write when disk hasn't been initialised yet!");
 		return;
 	}
 
 	BlockCacheIndexEntry *entry = NULL;
 	char *data = _fs_blocks_fetchFromCacheOrCreate(block_num, &entry);
 	if (!data) {
-		printError("[FsBlocks] Unable to create cache item!");
+		printError("fs:blocks", "Unable to create cache item!");
 		return;
 	} else if (!entry) {
-		printError("[FsBlocks] Entry is NULL");
+		printError("fs:blocks", "Entry is NULL");
 		return;
 	}
 
@@ -323,7 +327,7 @@ void fs_blocks_writeBlock(u32 block_num, char *content, BlockOperationCallback c
 
 	BlockOperationMeta *bmeta = _fs_blocks_allocateBlockOperationMeta(block_num);
 	if (!bmeta) {
-		printError("[FsBlocks] Unable to write as allocateBlockOperationMeta returned NULL");
+		printError("fs:blocks", "Unable to write as allocateBlockOperationMeta returned NULL");
 		return;
 	}
 
@@ -335,7 +339,7 @@ void fs_blocks_writeBlock(u32 block_num, char *content, BlockOperationCallback c
 
 void fs_blocks_write(u32 address, char *data, size_t n, BlockOperationCallback callback, void *meta) {
 	if (numberOfBlocks == 0 || blockSize == 0) {
-		printError("[FsBlocks] Unable to write when disk hasn't been initialised yet!");
+		printError("fs:blocks", "Unable to write when disk hasn't been initialised yet!");
 		return;
 	}
 

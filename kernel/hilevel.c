@@ -34,8 +34,6 @@ u32 getProgramInstAddress(const char *name) {
 }
 
 void postHandlerCheckForValidCurrentProcessOrWait(ctx_t *ctx) {
-	printLine("hi:phc", "postHandlerCheckForValidCurrentProcessOrWait");
-
 	if (ctx && ctx->pc < 0x1000) {
 		printError("hi:phc", " - Invalid PC detected!");
 	}
@@ -164,8 +162,6 @@ void hilevel_handler_irq(ctx_t *ctx) {
 	// Step 5: write the interrupt identifier to signal we're done.
 
 	GICC0->EOIR = id;
-
-	printLine("hi:irq", " - done");
 
 	postHandlerCheckForValidCurrentProcessOrWait(ctx);
 }

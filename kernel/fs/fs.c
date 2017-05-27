@@ -38,7 +38,7 @@ void _fs_writeSuperBlock() {
 	u32 blockSize = fs_blocks_getBlockSize();
 	size_t size = MAX_INODES * sizeof(INodeIndexEntry);
 	if (size > blockSize) {
-		printError("[Fs] INodeIndex does not fit into a single block!");
+		printError("fs", "INodeIndex does not fit into a single block!");
 		return;
 	}
 	char mem[blockSize];
@@ -52,7 +52,7 @@ void _fs_writeINode(u32 block_num, INode *inode) {
 	u32 blockSize = fs_blocks_getBlockSize();
 	size_t size = sizeof(INode);
 	if (size > blockSize) {
-		printError("[Fs] INode does not fit into a single block!");
+		printError("fs", "INode does not fit into a single block!");
 		return;
 	}
 	char mem[blockSize];
@@ -64,7 +64,7 @@ void _fs_writeINode(u32 block_num, INode *inode) {
 
 void _fs_handle_readSuperBlock(u32 block_num, char *resp, void *meta) {
 	if (resp[0] == '\0') {
-		printError("[Fs] Initialising new file system");
+		printError("fs", "Initialising new file system");
 		memcpy(inode_index[0].path, "a.txt", 6);
 		inode_index[0].block_num = 1;
 		_fs_index_modified = true;
@@ -88,7 +88,7 @@ void _fs_handle_readSuperBlock(u32 block_num, char *resp, void *meta) {
 		memset(&mem[strlen(dat)], 0, blockSize - 12);
 		fs_blocks_writeBlock(2, mem, NULL, NULL);
 	} else {
-		printError("[Fs] Found filesystem super block");
+		printError("fs", "Found filesystem super block");
 		_fs_index_modified = false;
 
 		memcpy(&inode_index[0], resp, MAX_INODES * sizeof(INodeIndexEntry));
@@ -103,7 +103,7 @@ void fs_on_disk_connected() {
 
 void _fs_handle_readINode(u32 block_num, char *resp, void *meta) {
 	if (!meta) {
-		printError("[Fs] Unable to handle readINode as no meta was passed");
+		printError("fs", "Unable to handle readINode as no meta was passed");
 	}
 
 	INode *inode = (INode*)resp;
@@ -122,7 +122,7 @@ INodeFetchOperation *_fs_allocateINodeFetchOperation(u32 block_num) {
 		}
 	}
 
-	printError("[Fs] Out of inode fetch operation meta space!");
+	printError("fs", "Out of inode fetch operation meta space!");
 
 	return NULL;
 }
@@ -132,7 +132,7 @@ bool fs_fetchINode(const char *path, INodeFetchCallback callback, void *meta) {
 		if (strcmp(inode_index[i].path, path) == 0) {
 			INodeFetchOperation *rmeta = _fs_allocateINodeFetchOperation(inode_index[i].block_num);
 			if (!rmeta) {
-				printError("[Fs] Unable to read as allocateINodeFetchOperation returned NULL");
+				printError("fs", "Unable to read as allocateINodeFetchOperation returned NULL");
 				return false;
 			}
 			rmeta->callback = callback;
