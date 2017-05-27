@@ -1,7 +1,7 @@
 #include "utils.h"
 #include "PL011.h"
 
-void kprint(const char *cs) {
+size_t kprint(const char *cs) {
 	size_t ptr = 0;
 	while (cs[ptr] != '\0') {
 		if (cs[ptr] != '\r') {
@@ -9,13 +9,17 @@ void kprint(const char *cs) {
 		}
 		ptr++;
 	}
+	return ptr;
 }
 
 
 extern void kprintmod(const char *mod) {
 	kprint("[");
-	kprint(mod);
-	kprint("] ");
+	size_t res = kprint(mod);
+	for (int i = 0; i < 10 - res; i++) {
+		kprint(" ");
+	}
+	kprint("]  ");
 }
 
 void printLine(const char *mod, const char *cs) {
