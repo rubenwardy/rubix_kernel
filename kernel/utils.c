@@ -16,7 +16,13 @@ size_t kprint(const char *cs) {
 extern void kprintmod(const char *mod) {
 	kprint("[");
 	size_t res = kprint(mod);
-	for (int i = 0; i < 10 - res; i++) {
+
+	size_t spaces = 0;
+	if (res <= 10) {
+		spaces = 10 - res;
+	}
+
+	for (int i = 0; i < spaces; i++) {
 		kprint(" ");
 	}
 	kprint("]  ");
