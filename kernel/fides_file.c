@@ -26,8 +26,8 @@ void fides_file_init() {
 FidesFileEntry *_fides_file_allocateEntry() {
 	for (size_t i = 0; i < MAX_FIDES_FILES; i++) {
 		if (_fides_files[i].id == 0) {
+			memset(&_fides_files[i], 0, sizeof(FidesFileEntry));
 			_fides_files[i].id = ++fides_files_count;
-			_fides_files[i].inode.id = 0;
 			return &_fides_files[i];
 		}
 	}
