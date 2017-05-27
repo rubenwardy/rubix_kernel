@@ -27,30 +27,30 @@ u32 getProgramInstAddress(const char *name) {
 	} else if (strcmp(name, "p5") == 0) {
 		return (u32)&main_P5;
 	} else {
-		printError("Unable to find program");
-		printError(name);
+		printError("hilevel", "Unable to find program");
+		printError("hilevel", name);
 		return 0;
 	}
 }
 
 void postHandlerCheckForValidCurrentProcessOrWait(ctx_t *ctx) {
-	printLine("postHandlerCheckForValidCurrentProcessOrWait");
+	printLine("hi:phc", "postHandlerCheckForValidCurrentProcessOrWait");
 
 	if (ctx && ctx->pc < 0x1000) {
-		printError(" - Invalid PC detected!");
+		printError("hi:phc", " - Invalid PC detected!");
 	}
 
 	pcb_t *current = processes_getCurrent();
 	if (!current) {
 		if (processes_runScheduler(ctx)) {
 			if (ctx && ctx->pc < 0x1000) {
-				printError(" - Invalid PC detected!");
+				printError("hi:phc", " - Invalid PC detected!");
 			}
 			return;
 		}
 	} else if (current->blocked == NOT_BLOCKED) {
 		if (ctx && ctx->pc < 0x1000) {
-			printError(" - Invalid PC detected!");
+			printError("hi:phc", " - Invalid PC detected!");
 		}
 		return;
 	} else {
@@ -58,7 +58,7 @@ void postHandlerCheckForValidCurrentProcessOrWait(ctx_t *ctx) {
 		processes_setCurrent(NULL);
 	}
 
-	printLine("entering WFI mode...");
+	printLine("hi:phc", "entering WFI mode...");
 	asm("WFI");
 }
 
@@ -67,7 +67,7 @@ void postHandlerCheckForValidCurrentProcessOrWait(ctx_t *ctx) {
 // Initialise states
 //
 void hilevel_handler_rst(ctx_t *ctx) {
-	printError("RESET");
+	printError("hi:rst", "RESET");
 
 	processes_init();
 	scheduler_init();
@@ -79,11 +79,11 @@ void hilevel_handler_rst(ctx_t *ctx) {
 
 	processes_start(PRIORITY_NORMAL, 0x50, getProgramInstAddress("console"));
 
-	printLine(" - Setting current & ctx");
+	printLine("hi:rst", " - Setting current & ctx");
 
 	processes_switchTo(ctx, 0);
 
-	printLine(" - Initialising timer and GIC");
+	printLine("hi:rst", " - Initialising timer and GIC");
 
 	TIMER0->Timer1Load  = 0x00100000; // select period = 2^20 ticks ~= 1 sec
 	TIMER0->Timer1Ctrl  = 0x00000002; // select 32-bit   timer
@@ -104,11 +104,11 @@ void hilevel_handler_rst(ctx_t *ctx) {
 	GICC0->CTLR         = 0x00000001; // enable GIC interface
 	GICD0->CTLR         = 0x00000001; // enable GIC distributor
 
-	printLine(" - Enabling irq interrupts");
+	printLine("hi:rst", " - Enabling irq interrupts");
 
 	int_enable_irq();
 
-	printLine(" - Done!");
+	printLine("hi:rst", " - Done!");
 }
 
 
@@ -117,14 +117,13 @@ void hilevel_handler_rst(ctx_t *ctx) {
 // Handle interrupts
 //
 void hilevel_handler_irq(ctx_t *ctx) {
-
-
-	printLine("IRQ");
+	printLine("hi:irq", "IRQ");
 
 	// Step 2: read	the interrupt identifier so we know the source.
 
 	u32 id = GICC0->IAR;
 
+	kprintmod("hi:irq");
 	printNum(id);
 
 	// Step 4: handle the interrupt, then clear (or reset) the source.
@@ -146,7 +145,7 @@ void hilevel_handler_irq(ctx_t *ctx) {
 		while (PL011_can_getc(UART1)) {
 			u8 c = PL011_getc(UART1, true);
 			fides_terminal_input(c);
-			printLine("Reading char");
+			printLine("hilevel", "Reading char");
 		}
 
 		blockedqueue_checkForBlockedInReads();
@@ -166,12 +165,13 @@ void hilevel_handler_irq(ctx_t *ctx) {
 
 	GICC0->EOIR = id;
 
-	printLine(" - done");
+	printLine("hi:irq", " - done");
 
 	postHandlerCheckForValidCurrentProcessOrWait(ctx);
 }
 
 u32 svc_handle_write(ctx_t *ctx, pcb_t *current) {
+	kprintmod("hi:svc");
 	kprint(" - write ");
 
 	int   fd = (int  )(ctx->gpr[0]);
@@ -188,7 +188,7 @@ u32 svc_handle_write(ctx_t *ctx, pcb_t *current) {
 	kprint("\n");
 
 	if (n == 0 || n > 2048) {
-		printError("Length is 0, or too large");
+		printError("hi:svc", "Length is 0, or too large");
 		return -1;
 	}
 
@@ -197,17 +197,17 @@ u32 svc_handle_write(ctx_t *ctx, pcb_t *current) {
 		if (node->write) {
 			node->write(node, x, n);
 		} else {
-			printError("Operation not permitted");
+			printError("hi:svc", "Operation not permitted");
 		}
 	} else {
-		printError("Unable to find fides to write to.");
+		printError("hi:svc", "Unable to find fides to write to.");
 	}
 
 	return n;
 }
 
 u32 svc_handle_read(ctx_t *ctx, pcb_t *current) {
-	printLine(" - read");
+	printLine("hi:svc", " - read");
 
 	int   fd = (int  )(ctx->gpr[0]);
 	char*  x = (char*)(ctx->gpr[1]);
@@ -219,31 +219,31 @@ u32 svc_handle_read(ctx_t *ctx, pcb_t *current) {
 			size_t res = node->read(node, x, n);
 			if (res == SIZE_MAX) {
 				if (node->is_blocking) {
-					printLine(" - blocked");
+					printLine("hi:svc", " - blocked");
 					scheduler_remove(current->pid);
 					current->blocked = BLOCKED_FILE;
 					blockedqueue_addFileRead(current->pid, fd, x, n);
 					processes_runScheduler(ctx);
 					return ctx->gpr[0];
 				} else {
-					printLine(" - nothing read, but non-blocking");
+					printLine("hi:svc", " - nothing read, but non-blocking");
 					return -1;
 				}
 			} else {
 				return res;
 			}
 		} else {
-			printError("Operation not permitted");
+			printError("hi:svc", "Operation not permitted");
 			return 0;
 		}
 	} else {
-		printError("Unable to find fides to write to.");
+		printError("hi:svc", "Unable to find fides to write to.");
 		return 0;
 	}
 }
 
 u32 svc_handle_fork(ctx_t *ctx, pcb_t *current) {
-	printLine(" - fork");
+	printLine("hi:svc", " - fork");
 
 	size_t new_id = processes_findByPID(processes_startByCtx(current->priority, current->pid, ctx));
 	if (new_id == SIZE_MAX) {
@@ -254,7 +254,7 @@ u32 svc_handle_fork(ctx_t *ctx, pcb_t *current) {
 
 	int offset = current->stack_start - ctx->sp;
 	if (offset < 0) {
-		printError("Stack size < 0!");
+		printError("hi:svc", "Stack size < 0!");
 		processes_remove(new->pid);
 		return -1;
 	}
@@ -267,14 +267,14 @@ u32 svc_handle_fork(ctx_t *ctx, pcb_t *current) {
 	new->parent = current->pid;
 
 	if (offset != new->stack_start - new->ctx.sp) {
-		printError("Mismatching stack sizes!");
+		printError("hi:svc", "Mismatching stack sizes!");
 	}
 
 	return new->pid;
 }
 
 void svc_handle_exit(ctx_t *ctx, pcb_t *current) {
-	printLine(" - exit");
+	printLine("hi:svc", " - exit");
 
 	// Check for processes that are wait*()-ing for exit code
 	BlockedProcess *bl = blockedqueue_popNextProcessExit(current->pid, current->parent);
@@ -287,7 +287,7 @@ void svc_handle_exit(ctx_t *ctx, pcb_t *current) {
 			proc->blocked = NOT_BLOCKED;
 			scheduler_add(proc->pid, proc->priority);
 		} else {
-			printError("unable to find process.");
+			printError("hi:svc", "unable to find process.");
 		}
 	}
 
@@ -295,7 +295,7 @@ void svc_handle_exit(ctx_t *ctx, pcb_t *current) {
 }
 
 u32 svc_handle_exec(ctx_t *ctx, pcb_t *current) {
-	printLine(" - exec");
+	printLine("hi:svc", " - exec");
 
 	char *path = (char*) ctx->gpr[0];
 	u32 addr = getProgramInstAddress(path);
@@ -318,13 +318,13 @@ u32 svc_handle_exec(ctx_t *ctx, pcb_t *current) {
 }
 
 u32 svc_handle_kill(ctx_t *ctx, pcb_t *current) {
-	printLine(" - kill");
+	printLine("hi:svc", " - kill");
 
 	int pid = (int) ctx->gpr[0];
 	int sig = (int) ctx->gpr[1];
 
 	if (pid > 0) {
-		printLine("   - pid exact");
+		printLine("hi:svc", "   - pid exact");
 		if (!processes_sendKill(pid, sig)) {
 			return -1;
 		} else if (current->pid == 0) { // current process was killed
@@ -334,7 +334,7 @@ u32 svc_handle_kill(ctx_t *ctx, pcb_t *current) {
 			return 0;
 		}
 	} else if (pid == 0 || pid == -1) {
-		printLine("   - pid = 0 / -1");
+		printLine("hi:svc", "   - pid = 0 / -1");
 		// TODO: proper process groups
 		if (!processes_sendKillToChildren(current->pid, sig, 0)) {
 			return -1;
@@ -344,7 +344,7 @@ u32 svc_handle_kill(ctx_t *ctx, pcb_t *current) {
 		processes_runScheduler(ctx);
 		return ctx->gpr[0];
 	} else {
-		printLine("   - pid exact, pgroup");
+		printLine("hi:svc", "   - pid exact, pgroup");
 		// TODO: proper process groups
 		if (!processes_sendKillToChildren(current->pid, sig, -pid)) {
 			return -1;
@@ -361,7 +361,7 @@ u32 svc_handle_kill(ctx_t *ctx, pcb_t *current) {
 }
 
 void svc_handle_wait(ctx_t *ctx, pcb_t *current) {
-	printLine(" - wait");
+	printLine("hi:svc", " - wait");
 
 	pid_t pid   = (pid_t) ctx->gpr[0];
 	int *status = (int*)  ctx->gpr[1];
@@ -373,7 +373,7 @@ void svc_handle_wait(ctx_t *ctx, pcb_t *current) {
 }
 
 u32 svc_handle_pipe(ctx_t *ctx, pcb_t *current) {
-	printLine(" - pipe");
+	printLine("hi:svc", " - pipe");
 
 	FiDes *p_out = fides_create(current->pid, current->fid_counter++);
 	FiDes *p_in = fides_create(current->pid, current->fid_counter++);
@@ -385,13 +385,13 @@ u32 svc_handle_pipe(ctx_t *ctx, pcb_t *current) {
 
 		return 0;
 	} else {
-		printError("Unable to create pipe");
+		printError("hi:svc", "Unable to create pipe");
 		return -1;
 	}
 }
 
 u32 svc_handle_close(ctx_t *ctx, pcb_t *current) {
-	printLine(" - close ");
+	printLine("hi:svc", " - close ");
 
 	int   fd = (int  )(ctx->gpr[0]);
 	printNum(fd);
@@ -400,19 +400,19 @@ u32 svc_handle_close(ctx_t *ctx, pcb_t *current) {
 	if (fides_drop(current->pid, fd)) {
 		return 0;
 	} else {
-		printError("Unable to close file descriptor");
+		printError("hi:svc", "Unable to close file descriptor");
 		return -1;
 	}
 }
 
 u32 svc_handle_dup2(ctx_t *ctx, pcb_t *current) {
-	printLine(" - dup2");
+	printLine("hi:svc", " - dup2");
 
 	int old = (int)ctx->gpr[0];
 	int new = (int)ctx->gpr[1];
 
 	if (old == new) {
-		printLine("  - no need to duplicate FiDes of same ID");
+		printLine("hi:svc", "  - no need to duplicate FiDes of same ID");
 		return new;
 	}
 
@@ -431,7 +431,7 @@ u32 svc_handle_dup2(ctx_t *ctx, pcb_t *current) {
 }
 
 u32 svc_handle_fd_setblock(ctx_t *ctx, pcb_t *current) {
-	printLine(" - fd_setblock");
+	printLine("hi:svc", " - fd_setblock");
 
 	int  fd          = (int)(ctx->gpr[0]);
 	bool is_blocking = (int)(ctx->gpr[1]);
@@ -449,6 +449,7 @@ u32 svc_handle_fd_setblock(ctx_t *ctx, pcb_t *current) {
 }
 
 u32 svc_handle_setpriority(ctx_t *ctx, pcb_t *current) {
+	kprintmod("hi:svc");
 	kprint(" - setpriority ");
 
 	int who  = (int)(ctx->gpr[0]);
@@ -459,18 +460,18 @@ u32 svc_handle_setpriority(ctx_t *ctx, pcb_t *current) {
 
 	size_t id = processes_findByPID(who);
 	if (id == SIZE_MAX) {
-		printError("Unable to find process to set priority of");
+		printError("hilevel", "Unable to find process to set priority of");
 		return -1;
 	}
 
 	pcb_t* proc = processes_get(id);
 	if (!proc) {
-		printError("Unable to get process by id");
+		printError("hilevel", "Unable to get process by id");
 		return -1;
 	}
 
 	if (proc->parent != current->pid) {
-		printError("Process attempted to change priority of non-child!");
+		printError("hilevel", "Process attempted to change priority of non-child!");
 		return -1;
 	}
 
@@ -480,6 +481,7 @@ u32 svc_handle_setpriority(ctx_t *ctx, pcb_t *current) {
 }
 
 u32 svc_handle_fopen(ctx_t *ctx, pcb_t *current) {
+	kprintmod("hi:svc");
 	kprint(" - fopen ");
 
 	char *path = (char*)(ctx->gpr[0]);
@@ -517,26 +519,29 @@ u32 svc_handle_fopen(ctx_t *ctx, pcb_t *current) {
 #define SYS_SETPRIORITY ( 0x12 )
 #define SYS_FOPEN       ( 0x13 )
 void hilevel_handler_svc(ctx_t *ctx, u32 id) {
-	printLine("SVC");
+	printLine("hi:svc", "SVC");
 
 	pcb_t *current = processes_getCurrent();
 
+	kprintmod("hi:svc");
 	kprint("Stack size is: ");
 	printNum(current->stack_start - ctx->sp);
 	kprint("\n");
+	kprintmod("hi:svc");
 	kprint("Start: ");
 	printNum(current->stack_start);
 	kprint("\n");
+	kprintmod("hi:svc");
 	kprint("Current: ");
 	printNum(ctx->sp);
 	kprint("\n");
 	if (ctx->sp > current->stack_start) {
-		printError("Stack pointer out of bounds!");
+		printError("hi:svc", "Stack pointer out of bounds!");
 	}
 
 	switch (id) {
 	case SYS_YIELD:
-		printLine(" - scheduler");
+		printLine("hi:svc", " - scheduler");
 		processes_runScheduler(ctx);
 		break;
 	case SYS_WRITE:
@@ -579,12 +584,12 @@ void hilevel_handler_svc(ctx_t *ctx, u32 id) {
 		ctx->gpr[0] = svc_handle_kill(ctx, current);
 		break;
 	default:
-		printError(" - unknown/unsupported");
+		printError("hi:svc", " - unknown/unsupported");
 		printNum(id);
 		break;
 	}
 
-	printLine(" - done");
+	printLine("hi:svc", " - done");
 
 	postHandlerCheckForValidCurrentProcessOrWait(ctx);
 }

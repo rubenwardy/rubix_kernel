@@ -8,19 +8,19 @@ size_t read_size = 0;
 
 size_t fides_terminal_read(FiDes *node, char *x, size_t n) {
 	if (read_size == 0 && n > 0) {
-		printLine("[termr] Unable to read");
+		printLine("terminal", "[termr] Unable to read");
 		return SIZE_MAX;
 	}
-	printLine("[termr] Reading...");
+	printLine("terminal", "[termr] Reading...");
 
 	size_t to_read = min(read_size, n);
 	if (to_read > 0) {
-		printLine("[termr] reading...");
+		printLine("terminal", "[termr] reading...");
 		memcpy(x, &input_buffer[0], to_read * sizeof(char));
 		memcpy(&input_buffer[0], &input_buffer[to_read], INPUT_BUFFER_SIZE - to_read * sizeof(char));
 		read_size -= to_read;
 	} else {
-		printLine("[termr] no read");
+		printLine("terminal", "[termr] no read");
 	}
 	return to_read;
 }

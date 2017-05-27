@@ -15,7 +15,7 @@ FiDes *fides_create(pid_t pid, u32 fid) {
 		ptr++;
 
 		if (ptr >= MAX_INODES) {
-			printError("Maximum number of FiDes reached, returning 0!");
+			printError("fides", "Maximum number of FiDes reached, returning 0!");
 			return 0;
 		}
 	}
@@ -24,6 +24,7 @@ FiDes *fides_create(pid_t pid, u32 fid) {
 	fidess[ptr].id   = fid;
 	fidess[ptr].is_blocking = true;
 
+	kprintmod("fides");
 	kprint("Created fides id=");
 	printNum(fidess[ptr].id);
 	kprint(" for process pid=");
@@ -82,7 +83,7 @@ int fides_drop(pid_t pid, u32 fid) {
 	if (fides->drop) {
 		fides->drop(fides);
 	} else {
-		printLine("No drop found!");
+		printLine("fides", "No drop found!");
 	}
 	memset(fides, 0, sizeof(FiDes));
 	return 1;
@@ -124,6 +125,6 @@ FiDes *fides_get(pid_t pid, u32 id) {
 		}
 	}
 
-	printError("Failed to find fides");
+	printError("fides", "Failed to find fides");
 	return 0;
 }

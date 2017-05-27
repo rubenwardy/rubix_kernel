@@ -78,11 +78,11 @@ void fides_pipe_drop(FiDes *node) {
 	}
 
 	if (pipe_buffers[node->data].refs_write + pipe_buffers[node->data].refs_read == 0) {
-		printLine("Destroying pipe (no references left)");
+		printLine("pipes", "Destroying pipe (no references left)");
 		node->drop = 0;
 		node->grab = 0;
 	} else {
-		printLine("Dropped fd to pipe, but references remain");
+		printLine("pipes", "Dropped fd to pipe, but references remain");
 	}
 }
 
@@ -98,7 +98,7 @@ void fides_pipe_create(FiDes *one, FiDes *two) {
 	while (pipe_buffers[ptr].refs_read + pipe_buffers[ptr].refs_write > 0) {
 		ptr++;
 		if (ptr >= MAX_PIPES) {
-			printError("Unable to create pipe, max reached!");
+			printError("pipes", "Unable to create pipe, max reached!");
 			return;
 		}
 	}

@@ -45,7 +45,7 @@ size_t fides_file_read(FiDes *node, char *data, size_t max) {
 	}
 
 	if (!entry) {
-		printError("[FidesFile] Unable to get entry for file!");
+		printError("fd_files", "[FidesFile] Unable to get entry for file!");
 		return 0;
 	}
 
@@ -55,7 +55,7 @@ size_t fides_file_read(FiDes *node, char *data, size_t max) {
 
 	u32 to_read = min(max, entry->inode.size - entry->ptr);
 	if (entry->inode.size == entry->ptr) {
-		printError("[FidesFile] Reached end of file!");
+		printError("fd_files", "[FidesFile] Reached end of file!");
 		return 0;
 	}
 
@@ -75,7 +75,7 @@ size_t fides_file_write(FiDes *node, const char *data, size_t len) {
 	}
 
 	if (!entry) {
-		printError("[FidesFile] Unable to get entry for file!");
+		printError("fd_files", "[FidesFile] Unable to get entry for file!");
 		return 0;
 	}
 
@@ -98,7 +98,7 @@ void fides_file_drop(FiDes *node) {
 	}
 
 	if (!entry) {
-		printError("[FidesFile] Unable to get entry for file!");
+		printError("fd_files", "[FidesFile] Unable to get entry for file!");
 		return;
 	}
 
@@ -113,7 +113,7 @@ void fides_file_drop(FiDes *node) {
 void _fides_file_handle_read_data(u32 block_num, char *resp, void *meta) {
 	FidesFileEntry *entry = (FidesFileEntry*)meta;
 	if (!entry) {
-		printError("[FidesFile] Unable to get entry linked to inode! rdata");
+		printError("fd_files", "[FidesFile] Unable to get entry linked to inode! rdata");
 		return;
 	}
 
@@ -125,11 +125,11 @@ void _fides_file_handle_read_data(u32 block_num, char *resp, void *meta) {
 void _fides_file_handle_fetch_inode(INode *inode, void *meta) {
 	FidesFileEntry *entry = (FidesFileEntry*)meta;
 	if (!entry) {
-		printError("[FidesFile] Unable to get entry linked to inode! rinode");
+		printError("fd_files", "[FidesFile] Unable to get entry linked to inode! rinode");
 		return;
 	}
 
-	printError("Fetched INode!");
+	printError("fd_files", "Fetched INode!");
 
 	memcpy(&entry->inode, inode, sizeof(INode));
 

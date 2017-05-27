@@ -48,15 +48,16 @@ void processes_remove(pid_t pid) {
 
 	size_t ptr = processes_findByPID(pid);
 	if (ptr == SIZE_MAX) {
-		printError("Can't remove process if it doesn't exist!");
+		printError("processes", "Can't remove process if it doesn't exist!");
 		return;
 	}
 
 	if (pid == 1) {
-		printError("Attempt to remove pid=1");
+		printError("processes", "Attempt to remove pid=1");
 		while(1) {}
 	}
 
+	kprintmod("processes");
 	kprint("Found pid at ");
 	printNum(ptr);
 	kprint("\n");
@@ -66,6 +67,7 @@ void processes_remove(pid_t pid) {
 	processes[ptr].pid = 0;
 
 	while (ptr + 1 < MAX_PROCESSES && processes[ptr + 1].pid != 0) {
+		kprintmod("processes");
 		kprint("Switching ");
 		printNum(ptr);
 		kprint(" and ");
@@ -131,13 +133,14 @@ u32 processes_allocateStack(pid_t pid) {
 	while (pages[ptr].pid != 0) {
 		ptr++;
 		if (ptr >= MAX_PAGES) {
-			printError("FATAL: no stack space remaining");
+			printError("processes", "FATAL: no stack space remaining");
 			return 0;
 		}
 	}
 
 	pages[ptr].pid = pid;
 
+	kprintmod("processes");
 	kprint("Allocated page ");
 	printNum(ptr);
 	kprint(" to pid=");
@@ -153,17 +156,18 @@ void processes_deallocateStack(uint32_t stack_start) {
 
 pid_t processes_start(u8 priority, u32 cpsr, u32 pc) {
 	if (pc == 0) {
-		printLine("Unable to start process with null instructions");
+		printLine("processes", "Unable to start process with null instructions");
 	}
 
 	size_t id = processes_getCount();
 	pid_t pid = ++pid_count;
 
 	if (id == MAX_PROCESSES) {
-		printLine("Unable to start process as maximum processes limit was reached");
+		printLine("processes", "Unable to start process as maximum processes limit was reached");
 		return 0;
 	}
 
+	kprintmod("processes");
 	kprint("Starting process pid=");
 	printNum(pid);
 	kprint(" at pcb=");
@@ -197,10 +201,11 @@ pid_t processes_startByCtx(u8 priority, pid_t oldpid, ctx_t *ctx) {
 	pid_t pid = ++pid_count;
 
 	if (id == MAX_PROCESSES) {
-		printLine("Unable to start process as maximum processes limit was reached");
+		printLine("processes", "Unable to start process as maximum processes limit was reached");
 		return 0;
 	}
 
+	kprintmod("processes");
 	kprint("Starting process pid=");
 	printNum(pid);
 	kprint(" at pcb=");
@@ -223,17 +228,17 @@ pid_t processes_startByCtx(u8 priority, pid_t oldpid, ctx_t *ctx) {
 
 void processes_switchTo(ctx_t* ctx, int id)
 {
-	kprint("=========== ");
+	kprint("================ ");
 	printNum(processes[id].pid);
 	if (processes[id].blocked != NOT_BLOCKED) {
 		kprint(" (BLOCKED)");
 	}
-	kprint(" ===========\n");
+	kprint(" ================\n");
 
 	if (current) {
 		memcpy(&current->ctx, ctx, sizeof(ctx_t));
 		if (processes[id].pid == current->pid) {
-			printLine("Already running process, no need to switch!");
+			printLine("processes", "Already running process, no need to switch!");
 			return;
 		}
 	}
@@ -256,7 +261,7 @@ int processes_runScheduler(ctx_t* ctx)
 		processes_switchTo(ctx, id);
 		return 1;
 	} else {
-		printLine("All processes are blocked. Unable to switch");
+		printLine("processes", "All processes are blocked. Unable to switch");
 		return 0;
 	}
 }

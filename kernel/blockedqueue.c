@@ -26,7 +26,7 @@ BlockedProcess *getFree() {
 			return &blockedProcesses[ptr];
 		}
 	}
-	printError("[BlockedProcess::getFree] Unable to get free slot");
+	printError("blockedqueue", "[BlockedProcess::getFree] Unable to get free slot");
 	return NULL;
 }
 
@@ -66,14 +66,14 @@ void blockedqueue_unblockProcessesFromCondition(BlockedProcessMap func, void *me
 
 		u8 gpr0;
 		if (blocked->pid > 0 && func(blocked, &gpr0, meta)) {
-			printLine("[c4fc] unblocking process");
+			printLine("blockedqueue", "[c4fc] unblocking process");
 			pcb_t *pcb = processes_get(processes_findByPID(blocked->pid));
 			if (pcb) {
 				blocked->pid = 0;
 				pcb->ctx.gpr[0] = gpr0;
 				processes_unblockProcess(pcb);
 			} else {
-				printError("[c4fc] Program does not exist!");
+				printError("blockedqueue", "[c4fc] Program does not exist!");
 			}
 		}
 	}
@@ -97,24 +97,24 @@ bool l_check_pipe(BlockedProcess *blocked, u8 *gpr0, void *meta) {
 
 	FiDes *fides = fides_get(blocked->pid, blocked->fid);
 	if (!fides) {
-		printError("[c4bp] Unable to find fides which is blocked :/");
+		printError("blockedqueue", "[c4bp] Unable to find fides which is blocked :/");
 		blocked->pid = 0;
 		return false;
 	}
 
 	if (!fides_pipe_is_pipe(fides)) {
-		printLine("[c4bp] Is not pipe fides");
+		printLine("blockedqueue", "[c4bp] Is not pipe fides");
 		return false;
 	}
 
 	if (fides->data != pipe_id) {
-		printLine("[c4bp] not right pipe");
+		printLine("blockedqueue", "[c4bp] not right pipe");
 		return false;
 	}
 
 	size_t res = fides->read(fides, blocked->ret2, blocked->meta1);
 	if (res == SIZE_MAX) {
-		printError("[c4bp] THIS SHOULD NEVER HAPPEN");
+		printError("blockedqueue", "[c4bp] THIS SHOULD NEVER HAPPEN");
 		return false;
 	}
 
@@ -133,18 +133,18 @@ bool l_check_in_reads(BlockedProcess *blocked, u8 *gpr0, void *meta) {
 
 	FiDes *fides = fides_get(blocked->pid, blocked->fid);
 	if (!fides) {
-		printError("[c4bi] Unable to find fides which is blocked :/");
+		printError("blockedqueue", "[c4bi] Unable to find fides which is blocked :/");
 		return false;
 	}
 
 	if (!fides_terminal_is_terminal(fides)) {
-		printLine("[c4bi] Is not pipe fides");
+		printLine("blockedqueue", "[c4bi] Is not pipe fides");
 		return false;
 	}
 
 	size_t res = fides->read(fides, blocked->ret2, blocked->meta1);
 	if (res == SIZE_MAX) {
-		printError("[c4bi] THIS SHOULD NEVER HAPPEN");
+		printError("blockedqueue", "[c4bi] THIS SHOULD NEVER HAPPEN");
 		return false;
 	}
 
@@ -166,13 +166,13 @@ bool l_check_blocked_file(BlockedProcess *blocked, u8 *gpr0, void *meta) {
 	if (fides && fides->id == fid && fides_file_is_file(fides)) {
 		size_t res = fides->read(fides, blocked->ret2, blocked->meta1);
 		if (res == SIZE_MAX) {
-			printError("[c4bf] THIS SHOULD NEVER HAPPEN");
+			printError("blockedqueue", "[c4bf] THIS SHOULD NEVER HAPPEN");
 		} else {
 			*gpr0 = res;
 			return true;
 		}
 	} else {
-		printLine("[c4bf] Is not file fides, or not right file fides");
+		printLine("blockedqueue", "[c4bf] Is not file fides, or not right file fides");
 	}
 
 	return false;

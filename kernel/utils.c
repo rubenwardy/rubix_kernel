@@ -11,13 +11,22 @@ void kprint(const char *cs) {
 	}
 }
 
-void printLine(const char *cs) {
+
+extern void kprintmod(const char *mod) {
+	kprint("[");
+	kprint(mod);
+	kprint("] ");
+}
+
+void printLine(const char *mod, const char *cs) {
+	kprintmod(mod);
 	kprint(cs);
 	kprint("\n");
 }
 
-void printError(const char *cs) {
+void printError(const char *mod, const char *cs) {
 	kprint("\e[31m");
+	kprintmod(mod);
 	kprint(cs);
 	kprint("\e[0m\n");
 }

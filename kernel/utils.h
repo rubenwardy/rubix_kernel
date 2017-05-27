@@ -2,8 +2,9 @@
 #define UTILS_H
 
 extern void kprint(const char *cs);
-extern void printLine(const char *cs);
-extern void printError(const char *cs);
+extern void kprintmod(const char *mod);
+extern void printLine(const char *mod, const char *cs);
+extern void printError(const char *mod, const char *cs);
 extern void printNum2(int num);
 extern void printNum(int num);
 
