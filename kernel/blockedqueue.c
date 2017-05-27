@@ -123,7 +123,7 @@ bool l_check_pipe(BlockedProcess *blocked, u8 *gpr0, void *meta) {
 }
 
 void blockedqueue_checkForBlockedPipes(u32 pipe_id) {
-	blockedqueue_unblockProcessesFromCondition(&l_check_pipe, (void*)pipe_id);
+	blockedqueue_unblockProcessesFromCondition(&l_check_pipe, (void*)&pipe_id);
 }
 
 bool l_check_in_reads(BlockedProcess *blocked, u8 *gpr0, void *meta) {
@@ -179,5 +179,5 @@ bool l_check_blocked_file(BlockedProcess *blocked, u8 *gpr0, void *meta) {
 }
 
 void blockedqueue_checkForBlockedFile(u32 fid) {
-	blockedqueue_unblockProcessesFromCondition(&l_check_blocked_file, (void*)fid);
+	blockedqueue_unblockProcessesFromCondition(&l_check_blocked_file, (void*)&fid);
 }
