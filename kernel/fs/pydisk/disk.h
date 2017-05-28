@@ -1,7 +1,7 @@
 #ifndef DISK_H
 #define DISK_H
 
-#include "../hilevel.h"
+#include "../../hilevel.h"
 
 typedef void (*DiskCommandHandler)(char *resp, void *meta);
 

@@ -2,7 +2,7 @@
 #define VFS_H
 
 #include "inode.h"
-#include "disk.h"
+#include "pydisk/disk.h"
 
 typedef void (*INodeFetchCallback)(INode *inode, void *meta);
 

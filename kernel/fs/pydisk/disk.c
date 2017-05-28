@@ -1,6 +1,6 @@
 #include "disk.h"
-#include "../hilevel.h"
-#include "../utils.h"
+#include "../../hilevel.h"
+#include "../../utils.h"
 
 #define MAX_QUEUED_COMMANDS 10
 #define MAX_CMD 550

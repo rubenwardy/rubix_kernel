@@ -1,7 +1,7 @@
 #ifndef BLOCKS_H
 #define BLOCKS_H
 
-#include "../hilevel.h"
+#include "../../hilevel.h"
 
 typedef void (*BlockOperationCallback)(u32 block_num, char *resp, void *meta);
 

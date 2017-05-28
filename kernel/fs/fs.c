@@ -1,6 +1,6 @@
 #include "fs.h"
-#include "disk.h"
-#include "blocks.h"
+#include "pydisk/disk.h"
+#include "pydisk/blocks.h"
 #include "../utils.h"
 
 typedef struct __attribute__((__packed__)) {

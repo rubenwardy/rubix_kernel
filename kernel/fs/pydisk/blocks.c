@@ -1,7 +1,7 @@
 #include "blocks.h"
 #include "disk.h"
-#include "fs.h"
-#include "../utils.h"
+#include "../fs.h"
+#include "../../utils.h"
 
 size_t numberOfBlocks;
 size_t blockSize;
@@ -335,25 +335,4 @@ void fs_blocks_writeBlock(u32 block_num, char *content, BlockOperationCallback c
 	bmeta->meta = meta;
 
 	fs_disk_run_command(cmd, &_fs_blocks_handleWrite, (void*)bmeta);
-}
-
-void fs_blocks_write(u32 address, char *data, size_t n, BlockOperationCallback callback, void *meta) {
-	if (numberOfBlocks == 0 || blockSize == 0) {
-		printError("fs:blocks", "Unable to write when disk hasn't been initialised yet!");
-		return;
-	}
-
-	u32 block_num = address / blockSize;
-	BlockCacheIndexEntry *entry = NULL;
-	char *info = _fs_blocks_fetchFromCache(block_num, &entry);
-	if (info && entry && entry->loaded) {
-		for (int i = 0; i < n; i++) {
-			info[address - block_num * blockSize + i] = data[i];
-
-			// TODO: into multiple blocks
-		}
-	} else {
-		// TODO: read into cache
-	}
-
 }
