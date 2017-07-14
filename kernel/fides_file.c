@@ -2,7 +2,7 @@
 #include "blockedqueue.h"
 #include "utils.h"
 #include "fs/fs.h"
-#include "fs/blocks.h"
+#include "fs/pydisk/blocks.h"
 
 typedef struct {
 	u32 id;
