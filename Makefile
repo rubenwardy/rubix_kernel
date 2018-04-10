@@ -38,6 +38,9 @@ build       : ${PROJECT_TARGETS}
 launch-qemu : ${PROJECT_TARGETS}
 	@${QEMU_PATH}/bin/qemu-system-arm -M realview-pb-a8 -m 128M ${QEMU_DISPLAY} -gdb tcp:${QEMU_GDB} $(addprefix -serial , ${QEMU_UART}) -S -kernel $(filter %.bin, ${PROJECT_TARGETS})
 
+launch-qemu-no-gdb : ${PROJECT_TARGETS}
+	@${QEMU_PATH}/bin/qemu-system-arm -M realview-pb-a8 -m 128M ${QEMU_DISPLAY} $(addprefix -serial , ${QEMU_UART}) -S -kernel $(filter %.bin, ${PROJECT_TARGETS})
+
 launch-gdb  : ${PROJECT_TARGETS}
 	@${LINARO_PATH}/bin/${LINARO_PREFIX}-gdb -ex "file $(filter %.elf, ${PROJECT_TARGETS})" -ex "target remote ${QEMU_GDB}"
 

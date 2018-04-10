@@ -24,14 +24,6 @@ int gets(char* x, int n) {
 	return i;
 }
 
-/* The behaviour of the console process can be summarised as an
-* (infinite) loop over three main steps, namely
-*
-* 1. write a command prompt then read a command,
-* 2. split the command into space-separated tokens using strtok,
-* 3. execute whatever steps the command dictates.
-*/
-
 void main_console() {
 	printf("\n");
 
